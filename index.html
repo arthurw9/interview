@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="style.css?q=3">
+<script src="interview.js?z=3"></script>
+<script>
+function Render() {
+  var text=document.getElementById("definition").value;
+  var model = Parse(text);
+  var str = "";
+  var idx = 0;
+  while (idx < model.statement_list.length) {
+    var statement = model.statement_list[idx];
+    var expr = statement.expression;
+    str += statement.name + ": " + Evaluate(model, expr) +
+           " // ... = " + ExpressionDebugString(model, expr) + "<br>"; 
+    ++idx;
+  }
+  var interview = document.getElementById("interview");
+  interview.innerHTML = str;
+  return 1;
+}
+</script>
+</head>
+<body>
+<h1>Forms!</h1>
+<a href="test.html">Unit test file</a>
+<div class=flex id=outer>
+<div class=flex>
+<form>
+Interview Definition<br>
+<textarea id=definition>
+/* x = x + 1 */
+x = "yes";
+y = "no";
+z = 1 + 3 * 4 / (1 + 1);
+</textarea><br>
+<button type="button" onclick="Render();">Run</button>
+</form>
+</div>
+<div class=flex>
+<form id=interview>
+</form>
+</div>
+</div>
+</body>
+</html>
+

@@ -1,0 +1,36 @@
+* {
+  box-sizing: border-box;
+}
+
+.flex {
+  display: flex;
+  flex-wrap: wrap;
+  vertical-align: top;
+  min-width: 200px;
+  min-height: 200px;
+}
+
+form {
+  margin-bottom: 25ppx;
+  padding: 15px;
+  background-color: cyan;
+  border: 1px solid black;
+}
+
+button {
+  font-size: 16px;
+  border-radius: 3px;
+  background-color: lightgrey;
+  border: 1px solid grey;
+  box-shadow: 2px 2px teal;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: yellow;
+}
+
+button:active {
+  box-shadow: 1px 1px teal;
+}
+
