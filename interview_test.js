@@ -297,7 +297,7 @@ function TestParseExpression() {
   EXPECT_EQ(expr.type, NUMBER_TOKEN);
   EXPECT_EQ(expr.right, 13);
   EXPECT_EQ(model.token_idx, 4);
-  EXPECT_EQ(model.data["x"], 13);
+  EXPECT_EQ(Evaluate(model, expr), 13);
 
   model = Parse("x = 1 + 2 + 3;");
   expr = model.statement_list[0].expression;
@@ -312,7 +312,8 @@ function TestParseExpression() {
   EXPECT_EQ(expr.left.type, NUMBER_TOKEN);
   EXPECT_EQ(expr.left.right, 1);
   EXPECT_EQ(model.token_idx, 8);
-  EXPECT_EQ(model.data["x"], 6);
+  expr = model.statement_list[0].expression;
+  EXPECT_EQ(Evaluate(model, expr), 6);
 
   model = Parse("x = 10 - 2 - 4;");
   expr = model.statement_list[0].expression;
@@ -327,46 +328,47 @@ function TestParseExpression() {
   EXPECT_EQ(expr.left.type, NUMBER_TOKEN);
   EXPECT_EQ(expr.left.right, 10);
   EXPECT_EQ(model.token_idx, 8);
-  EXPECT_EQ(model.data["x"], 4);
+  expr = model.statement_list[0].expression;
+  EXPECT_EQ(Evaluate(model, expr), 4);
 
   model = Parse("x = 2 * 4 * 9;");
   expr = model.statement_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr), "2 4 * 9 *");
-  EXPECT_EQ(model.data["x"], 72);
+  EXPECT_EQ(Evaluate(model, expr), 72);
 
   model = Parse("x = 64 / 4 / 2;");
   expr = model.statement_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr), "64 4 / 2 /");
-  EXPECT_EQ(model.data["x"], 8);
+  EXPECT_EQ(Evaluate(model, expr), 8);
 
   model = Parse("x = 1 + 4 * 9 / 2 - 5;");
   expr = model.statement_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr), "1 4 9 * 2 / + 5 -");
-  EXPECT_EQ(model.data["x"], 14);
+  EXPECT_EQ(Evaluate(model, expr), 14);
 
   model = Parse("x = (((6 - 2 -2)));");
   expr = model.statement_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "6 2 - 2 -");
-  EXPECT_EQ(model.data["x"], 2);
+  EXPECT_EQ(Evaluate(model, expr), 2);
 
   model = Parse("x = 1 + (1 + 3) * 3 / 2 / 2;");
   expr = model.statement_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "1 1 3 + 3 * 2 / 2 / +");
-  EXPECT_EQ(model.data["x"], 4);
+  EXPECT_EQ(Evaluate(model, expr), 4);
 
   model = Parse("x = (11 * 5 - 50);");
   expr = model.statement_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "11 5 * 50 -");
-  EXPECT_EQ(model.data["x"], 5);
+  EXPECT_EQ(Evaluate(model, expr), 5);
 
   model = Parse("x = (6 - 2 -2) * (1 + (1 + 3) * 3 / 2 / 2) - (11 * 5 - 50);");
   expr = model.statement_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "6 2 - 2 - 1 1 3 + 3 * 2 / 2 / + * 11 5 * 50 - -");
-  EXPECT_EQ(model.data["x"], 3);
+  EXPECT_EQ(Evaluate(model, expr), 3);
 }
 function TestAll() {
   TestTokenizeNumbers();

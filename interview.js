@@ -288,6 +288,12 @@ function ParseStatement(model) {
   model.token_idx = idx;
   var expression = ParseExpression(model);
   var last_token_idx = model.token_idx;
+  if (last_token_idx >= model.tokens.length ||
+      model.tokens[last_token_idx][0] != ";") {
+    ParseError("Unterminated Statement.",
+               model.tokens[first_token_idx],
+               model);
+  }
   model.statement_list.push(
       {
         first_token_idx: first_token_idx,
@@ -296,7 +302,7 @@ function ParseStatement(model) {
         expression: expression,
         value: Evaluate(model, expression),
       });
-  model.token_idx = last_token_idx + 1;
+  model.token_idx += 1;
 }
 function Parse(text) {
   var model = {};
