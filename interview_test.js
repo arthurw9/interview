@@ -267,41 +267,57 @@ function TestCleanTokens() {
   EXPECT_EQ(tokens[idx][1], 27);
   EXPECT_EQ(tokens[idx][2], 1);
 }
-function TestParseSimpleStatements() {
+function TestParseAndRunAssignments() {
   var model = Parse("x = \"hello world\";");
-  EXPECT_EQ(model.statement_list.length, 1);
-  EXPECT_EQ(model.statement_list[0].first_token_idx, 0);
-  EXPECT_EQ(model.statement_list[0].last_token_idx, 3);
+  EXPECT_EQ(model.expression_list.length, 1);
+  EXPECT_EQ(model.expression_list[0].first_token_idx, 0);
+  EXPECT_EQ(model.expression_list[0].last_token_idx, 3);
+  expr = model.expression_list[0].expression;
+  EXPECT_EQ(ExpressionDebugString(model, expr), "x \"hello world\" =");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], "\"hello world\"");
 
   model = Parse("x = 1; y = 2;");
-  EXPECT_EQ(model.statement_list.length, 2);
-  EXPECT_EQ(model.statement_list[0].first_token_idx, 0);
-  EXPECT_EQ(model.statement_list[0].last_token_idx, 3);
-  EXPECT_EQ(model.statement_list[1].first_token_idx, 4);
-  EXPECT_EQ(model.statement_list[1].last_token_idx, 7);
+  EXPECT_EQ(model.expression_list.length, 2);
+  EXPECT_EQ(model.expression_list[0].first_token_idx, 0);
+  EXPECT_EQ(model.expression_list[0].last_token_idx, 3);
+  EXPECT_EQ(model.expression_list[1].first_token_idx, 4);
+  EXPECT_EQ(model.expression_list[1].last_token_idx, 7);
+  expr = model.expression_list[0].expression;
+  EXPECT_EQ(ExpressionDebugString(model, expr), "x 1 =");
+  expr = model.expression_list[1].expression;
+  EXPECT_EQ(ExpressionDebugString(model, expr), "y 2 =");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 1);
+  EXPECT_EQ(model.data["y"], 2);
 
   try {
     model = Parse(" /* irrelevant */ x = \"needs a ;\"");
     FAIL("Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
-        "ERROR: Unterminated Statement.\nidx = 18\n" +
+        "ERROR: Unterminated Statement. Expected ; semicolon.\nidx = 18\n" +
         " /* irrelevant */ x/* Here */ = \"needs a ;\"");
   }
-}
-function TestParseExpression() {
-  var model = Parse("x = 13;");
-  EXPECT_EQ(model.statement_list[0].name, "x");
-  expr = model.statement_list[0].expression;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "13");
+
+  model = Parse("x = 13;");
+  expr = model.expression_list[0].expression;
+  EXPECT_EQ(ExpressionDebugString(model, expr), "x 13 =");
+  EXPECT_EQ(expr.type, "=");
+  EXPECT_EQ(expr.left.type, IDENTIFIER_TOKEN);
+  EXPECT_EQ(expr.left.right, "x");
+  expr = expr.right;
   EXPECT_EQ(expr.type, NUMBER_TOKEN);
   EXPECT_EQ(expr.right, 13);
-  EXPECT_EQ(model.token_idx, 4);
   EXPECT_EQ(Evaluate(model, expr), 13);
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 13);
 
   model = Parse("x = 1 + 2 + 3;");
-  expr = model.statement_list[0].expression;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "1 2 + 3 +");
+  expr = model.expression_list[0].expression;
+  EXPECT_EQ(ExpressionDebugString(model, expr), "x 1 2 + 3 + =");
+  EXPECT_EQ(expr.type, "=");
+  expr = expr.right;
   EXPECT_EQ(expr.type, "+");
   EXPECT_EQ(expr.right.type, NUMBER_TOKEN);
   EXPECT_EQ(expr.right.right, 3);
@@ -312,11 +328,14 @@ function TestParseExpression() {
   EXPECT_EQ(expr.left.type, NUMBER_TOKEN);
   EXPECT_EQ(expr.left.right, 1);
   EXPECT_EQ(model.token_idx, 8);
-  expr = model.statement_list[0].expression;
-  EXPECT_EQ(Evaluate(model, expr), 6);
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 6);
 
   model = Parse("x = 10 - 2 - 4;");
-  expr = model.statement_list[0].expression;
+  EXPECT_EQ(model.token_idx, 8);
+  expr = model.expression_list[0].expression;
+  EXPECT_EQ(expr.type, "=");
+  expr = expr.right;
   EXPECT_EQ(ExpressionDebugString(model, expr), "10 2 - 4 -");
   EXPECT_EQ(expr.type, "-");
   EXPECT_EQ(expr.right.type, NUMBER_TOKEN);
@@ -327,48 +346,69 @@ function TestParseExpression() {
   EXPECT_EQ(expr.right.right, 2);
   EXPECT_EQ(expr.left.type, NUMBER_TOKEN);
   EXPECT_EQ(expr.left.right, 10);
-  EXPECT_EQ(model.token_idx, 8);
-  expr = model.statement_list[0].expression;
-  EXPECT_EQ(Evaluate(model, expr), 4);
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 4);
 
   model = Parse("x = 2 * 4 * 9;");
-  expr = model.statement_list[0].expression;
+  expr = model.expression_list[0].expression;
+  EXPECT_EQ(expr.type, "=");
+  expr = expr.right;
   EXPECT_EQ(ExpressionDebugString(model, expr), "2 4 * 9 *");
   EXPECT_EQ(Evaluate(model, expr), 72);
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 72);
 
   model = Parse("x = 64 / 4 / 2;");
-  expr = model.statement_list[0].expression;
+  expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr), "64 4 / 2 /");
   EXPECT_EQ(Evaluate(model, expr), 8);
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 8);
 
   model = Parse("x = 1 + 4 * 9 / 2 - 5;");
-  expr = model.statement_list[0].expression;
+  expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr), "1 4 9 * 2 / + 5 -");
   EXPECT_EQ(Evaluate(model, expr), 14);
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 14);
 
   model = Parse("x = (((6 - 2 -2)));");
-  expr = model.statement_list[0].expression;
+  expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "6 2 - 2 -");
   EXPECT_EQ(Evaluate(model, expr), 2);
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 2);
 
   model = Parse("x = 1 + (1 + 3) * 3 / 2 / 2;");
-  expr = model.statement_list[0].expression;
+  expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "1 1 3 + 3 * 2 / 2 / +");
   EXPECT_EQ(Evaluate(model, expr), 4);
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 4);
 
   model = Parse("x = (11 * 5 - 50);");
-  expr = model.statement_list[0].expression;
+  expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "11 5 * 50 -");
   EXPECT_EQ(Evaluate(model, expr), 5);
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 5);
 
   model = Parse("x = (6 - 2 -2) * (1 + (1 + 3) * 3 / 2 / 2) - (11 * 5 - 50);");
-  expr = model.statement_list[0].expression;
+  expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "6 2 - 2 - 1 1 3 + 3 * 2 / 2 / + * 11 5 * 50 - -");
   EXPECT_EQ(Evaluate(model, expr), 3);
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 3);
+}
+function TestParseAndRunAssignmentsWithState() {
+  model = Parse("x = 1; y = 2; x = x + y; y = y + 2; x = x * y;");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], 12);
+  EXPECT_EQ(model.data["y"], 4);
 }
 function TestAll() {
   TestTokenizeNumbers();
@@ -376,9 +416,8 @@ function TestAll() {
   TestTokenizeManyTokens();
   TestTokenizeBadNumbers();
   TestCleanTokens();
-  var o = {};
-  TestParseSimpleStatements();
-  TestParseExpression();
+  TestParseAndRunAssignments();
+  TestParseAndRunAssignmentsWithState();
   console.log("Test Complete.");
 }
 TestAll();

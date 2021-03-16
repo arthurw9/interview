@@ -146,13 +146,16 @@ function TokenToNode(model) {
   node.parent = null;
   node.left = null;
   node.right = null;
-  model.token_idx += 1;
   if (node.type == NUMBER_TOKEN) {
-    node.right = Number(TokenString(model, model.token_idx - 1));
+    node.right = Number(TokenString(model, model.token_idx));
   }
   if (node.type == STRING_TOKEN) {
-    node.right = String(TokenString(model, model.token_idx - 1));
+    node.right = String(TokenString(model, model.token_idx));
   }
+  if (node.type == IDENTIFIER_TOKEN) {
+    node.right = String(TokenString(model, model.token_idx));
+  }
+  model.token_idx += 1;
   return node;
 }
 function AppendBelowRight(node, new_node) {
@@ -163,34 +166,45 @@ function AppendBelowRight(node, new_node) {
     new_node.left.parent = new_node;
   }
 }
-function Remove(node) {
-  // TODO: Do error checking...
-  // This should only work if the node has at most one child.
-  // For now we assume it has a right child if any.
-  if (node.parent.right == node) {
-    node.parent.right = node.right;
-    if (node.right != null) {
-      node.right.parent = node.parent;
-    }
-  }
-}
 function HandleNewNode(model, curr, new_node) {
-  if (["+", "-", "*", "/", "head", "("].includes(curr.type)) {
-    if ([NUMBER_TOKEN, "(", STRING_TOKEN].includes(new_node.type)) {
+  var objects;
+  var operators;
+  if (["head"].includes(curr.type)) {
+    if ([IDENTIFIER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       return new_node;
     }
   }
-  if ([NUMBER_TOKEN, "()",].includes(curr.type)) {
+  if ([IDENTIFIER_TOKEN].includes(curr.type)) {
+    if (["="].includes(new_node.type)) {
+      curr = curr.parent;
+      if (["head"].includes(curr.type)) {
+        AppendBelowRight(curr, new_node);
+        return new_node;
+      }
+    }
+  }
+  operators = ["+", "-", "*", "/", "head", "(", "="];
+  objects = [NUMBER_TOKEN, "(", STRING_TOKEN, IDENTIFIER_TOKEN];
+  if (operators.includes(curr.type)) {
+    if (objects.includes(new_node.type)) {
+      AppendBelowRight(curr, new_node);
+      return new_node;
+    }
+  }
+  objects = [NUMBER_TOKEN, "()", IDENTIFIER_TOKEN];
+  if (objects.includes(curr.type)) {
     if (["*", "/"].includes(new_node.type)) {
-      while (["*", "/", NUMBER_TOKEN, "()"].includes(curr.type)) {
+      var stuff_to_skip = objects.concat(["*", "/"]);
+      while (stuff_to_skip.includes(curr.type)) {
         curr = curr.parent;
       }
       AppendBelowRight(curr, new_node);
       return new_node;
     }
     if (["+", "-", ")"].includes(new_node.type)) {
-      while (["+", "-", "*", "/", NUMBER_TOKEN, "()"].includes(curr.type)) {
+      var stuff_to_skip = objects.concat(["+", "-", "*", "/"]);
+      while (stuff_to_skip.includes(curr.type)) {
         curr = curr.parent;
       }
       if (curr.type == "(" && new_node.type == ")") {
@@ -214,6 +228,13 @@ function ParseExpression(model) {
     var new_node = TokenToNode(model);
     curr = HandleNewNode(model, curr, new_node);
   }
+  if (model.token_idx < model.tokens.length) {
+    model.token_idx += 1;
+  } else {
+    ParseError("Unterminated Statement. Expected ; semicolon.",
+               model.tokens[model.first_token_idx],
+               model);
+  }
   return head.right;
 }
 function ExpressionDebugString(model, expr) {
@@ -221,6 +242,9 @@ function ExpressionDebugString(model, expr) {
     return String(expr.right);
   }
   if (expr.type == STRING_TOKEN) {
+    return String(expr.right);
+  }
+  if (expr.type == IDENTIFIER_TOKEN) {
     return String(expr.right);
   }
   if (expr.type == "()") {
@@ -241,6 +265,10 @@ function ExpressionDebugString(model, expr) {
   if (expr.type == "/") {
     return ExpressionDebugString(model, expr.left) + " " +
            ExpressionDebugString(model, expr.right) + " /";
+  }
+  if (expr.type == "=") {
+    return ExpressionDebugString(model, expr.left) + " " +
+           ExpressionDebugString(model, expr.right) + " =";
   }
   return "Unexpected expression type: " + expr.type;
 }
@@ -266,9 +294,18 @@ function Evaluate(model, expr) {
   if (expr.type == "()") {
     return Evaluate(model, expr.right);
   }
-  // TODO: error message!
-  return 777;
+  if (expr.type == IDENTIFIER_TOKEN) {
+    return model.data[expr.right];
+  }
+  if (expr.type == "=") {
+    value = Evaluate(model, expr.right);
+    model.data[expr.left.right] = value;
+    return value;
+  }
+  ParseError("Unexpected token during Evaluation.", expr.token, model);
 }
+// TODO: Delete this and make Evaluate handle expressions and statements.
+//       expressions and statements can be the same thing.
 function ParseStatement(model) {
   var idx = model.token_idx;
   var first_token_idx = idx;
@@ -302,7 +339,11 @@ function ParseStatement(model) {
         expression: expression,
         value: Evaluate(model, expression),
       });
-  model.token_idx += 1;
+}
+function RunModel(model) {
+  for (var i = 0; i < model.expression_list.length; ++i) {
+    Evaluate(model, model.expression_list[i].expression);
+  }
 }
 function Parse(text) {
   var model = {};
@@ -310,11 +351,22 @@ function Parse(text) {
   Tokenize(model);
   model.statement_list = [];
   model.token_idx = 0;
+  model.data = {};
   // TODO: Don't pass out the tokens from Tokenize. Instead pass in a model.
   // Then update errors in the model.
   model.tokens = CleanTokens(model.tokens, text);
+  model.expression_list = [];
   while (model.token_idx < model.tokens.length) {
-    ParseStatement(model);
+    // ParseStatement(model);
+    model.first_token_idx = model.token_idx;
+    var expr = ParseExpression(model);
+    var last_token_idx = model.token_idx - 1;
+    model.expression_list.push(
+        {
+          first_token_idx: model.first_token_idx,
+          last_token_idx: last_token_idx,
+          expression: expr
+        });
   }
   return model;
 }
