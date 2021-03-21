@@ -272,7 +272,7 @@ function TestParseAndRunAssignments() {
   EXPECT_EQ(model.expression_list.length, 1);
   EXPECT_EQ(model.expression_list[0].first_token_idx, 0);
   EXPECT_EQ(model.expression_list[0].last_token_idx, 3);
-  expr = model.expression_list[0].expression;
+  var expr = model.expression_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr), "x \"hello world\" =");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "\"hello world\"");
@@ -405,10 +405,96 @@ function TestParseAndRunAssignments() {
   EXPECT_EQ(model.data["x"], 3);
 }
 function TestParseAndRunAssignmentsWithState() {
-  model = Parse("x = 1; y = 2; x = x + y; y = y + 2; x = x * y;");
+  var model = Parse("x = 1; y = 2; x = x + y; y = y + 2; x = x * y;");
   RunModel(model);
   EXPECT_EQ(model.data["x"], 12);
   EXPECT_EQ(model.data["y"], 4);
+}
+function TestTokenizeIdDelimitedStrings() {
+  var tokens = TokenizeForTest("\"hello\n\n\rworld\"");
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], STRING_TOKEN);
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 15);
+
+  tokens = TokenizeForTest("abc\"hello\n\n\rworldabc\"");
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], STRING_TOKEN);
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 21);
+
+  tokens = TokenizeForTest("abc\"hello\n\"\n\rworldabc\"");
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], STRING_TOKEN);
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 22);
+  
+  try {
+    tokens = TokenizeForTest("abc\"hello\n\"\n\rworld\"");
+    FAIL("Foo!");
+  } catch(err) {
+    EXPECT_EQ(err,
+        "ERROR: Closing delimiter expected: [abc\"]\n" +
+        "idx = 0\n"+
+        "a/* Here */bc\"hello\n\"\n\rworld\"");
+  }
+
+  tokens = TokenizeForTest("abc\"\"\"\"\"\"abc\"");
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], STRING_TOKEN);
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 13);
+
+  tokens = TokenizeForTest("abc\"abcabcabc'abc`abc\"");
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], STRING_TOKEN);
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 22);
+
+  s = " zzzz\"Typical usage\n\n \"hi!\" zzzz false alarm. zzzz\" ";
+  tokens = TokenizeForTest(s);
+  EXPECT_EQ(tokens.length, 3);
+  EXPECT_EQ(tokens[0][0], WHITE_SPACE_TOKEN);
+  EXPECT_EQ(tokens[1][0], STRING_TOKEN);
+  EXPECT_EQ(tokens[2][0], WHITE_SPACE_TOKEN);
+  EXPECT_EQ(tokens[1][1], 1);
+  EXPECT_EQ(s.length, 52);
+  EXPECT_EQ(tokens[1][2], 50);
+}
+function TestFormNavigation() {
+  // TODO: Enable this test.
+  return;
+  var model = Parse(
+      "form US1040 " +
+
+      "page start " +
+      "message zzzz\" You are at start. What is going on? zzzz\" " +
+      "choices [foo bar baz fall1 fall2]" +
+      "next start " +
+      
+      "page fall1 " +
+      "message zzzz\" The next page will be by default zzzz\" " +
+      
+      "page fall2 " +
+      "message zzzz\" You made it! zzzz\" " +
+      "next start " +
+
+      "page foo " +
+      "message zzzz\" You chose foo! zzzz\" " +
+      "choices [start bar baz] " +
+      "next foo " +
+
+      "page bar " +
+      "message zzzz\" You chose bar! zzzz\" " +
+      "choices [start baz] " +
+      "next bar " +
+
+      "page baz " +
+      "message zzzz\" You chose baz! zzzz\" " +
+      "choices [start] " +
+      "next baz ");
+  console.log(model);
+  RunModel(model);
 }
 function TestAll() {
   TestTokenizeNumbers();
@@ -418,6 +504,8 @@ function TestAll() {
   TestCleanTokens();
   TestParseAndRunAssignments();
   TestParseAndRunAssignmentsWithState();
+  TestTokenizeIdDelimitedStrings();
+  TestFormNavigation();
   console.log("Test Complete.");
 }
 TestAll();

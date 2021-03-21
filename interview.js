@@ -7,6 +7,8 @@ function ParseError(msg, token, model) {
         text.substr(idx + 1);
 }
 
+var KEYWORDS = ["form", "page", "message", "choices", "next"]
+
 // Other types of tokens have exactly 1 character
 var WHITE_SPACE_TOKEN = "ws";
 var IDENTIFIER_TOKEN = "id";
@@ -20,7 +22,6 @@ function Tokenize(model) {
   var COMMENT_START = "/*";
   var COMMENT_END = "*/";
   var STRING_DELIM = "\"";
-  var STRING_ESCAPE = "\\";
   var DIGIT = /[0-9]/;
   var DIGIT_OR_DOT = /[.0-9]/;
   var IDENTIFIER_1 = /[a-zA-Z_]/;
@@ -47,6 +48,27 @@ function Tokenize(model) {
       token[1] = idx;
       while (idx < text.length && IDENTIFIER_2.test(text[idx])) {
         ++idx;
+      }
+      // special string delimiters can look like this:
+      // <id>"string body<id>"
+      // This is a way to allow strings to contain quotes.
+      // <id> should be chosen such that <id>" does not occur inside
+      // the string body.
+      if (idx < text.length && text[idx] == STRING_DELIM) {
+        token[0] = STRING_TOKEN;
+        // skip past the quote
+        ++idx;
+        // delim is <id>" delimiter?
+        var delim_length = idx - token[1];
+        var delim = text.substr(token[1], delim_length);
+        // Find the next occurance of the delimiter.
+        idx = text.indexOf(delim, idx);
+        if (idx < 0) {
+          ParseError("Closing delimiter expected: [" + delim + "]",
+                     token, model)
+        }
+        // skip past the end delimiter
+        idx += delim_length;
       }
       token[2] = idx - token[1];
       tokens.push(token);
@@ -91,7 +113,6 @@ function Tokenize(model) {
       token[0] = STRING_TOKEN;
       token[1] = idx;
       ++idx;
-      // TODO: Handle STRING_ESCAPE
       while (idx < text.length && STRING_DELIM != text[idx]) {
         ++idx;
       }
@@ -272,6 +293,9 @@ function ExpressionDebugString(model, expr) {
   }
   return "Unexpected expression type: " + expr.type;
 }
+// TODO: Abstract away the difference between model and expression.
+//       A model should also be an expression.
+// TODO: Optimize away the "()" nodes from the AST.
 function Evaluate(model, expr) {
   if (expr.type == NUMBER_TOKEN) {
     return Number(expr.right);
@@ -304,42 +328,6 @@ function Evaluate(model, expr) {
   }
   ParseError("Unexpected token during Evaluation.", expr.token, model);
 }
-// TODO: Delete this and make Evaluate handle expressions and statements.
-//       expressions and statements can be the same thing.
-function ParseStatement(model) {
-  var idx = model.token_idx;
-  var first_token_idx = idx;
-  if (model.tokens[idx][0] != IDENTIFIER_TOKEN) {
-    ParseError("Expected Identifier.",
-               model.tokens[first_token_idx],
-               model);
-  }
-  var name = model.text.substr(model.tokens[idx][1], model.tokens[idx][2]);
-  ++idx;
-  if (idx >= model.tokens.length || model.tokens[idx][0] != "=") {
-    ParseError("Expected '='.",
-               model.tokens[idx],
-               model);
-  }
-  ++idx;
-  model.token_idx = idx;
-  var expression = ParseExpression(model);
-  var last_token_idx = model.token_idx;
-  if (last_token_idx >= model.tokens.length ||
-      model.tokens[last_token_idx][0] != ";") {
-    ParseError("Unterminated Statement.",
-               model.tokens[first_token_idx],
-               model);
-  }
-  model.statement_list.push(
-      {
-        first_token_idx: first_token_idx,
-        last_token_idx: last_token_idx,
-        name: name,
-        expression: expression,
-        value: Evaluate(model, expression),
-      });
-}
 function RunModel(model) {
   for (var i = 0; i < model.expression_list.length; ++i) {
     Evaluate(model, model.expression_list[i].expression);
@@ -357,7 +345,6 @@ function Parse(text) {
   model.tokens = CleanTokens(model.tokens, text);
   model.expression_list = [];
   while (model.token_idx < model.tokens.length) {
-    // ParseStatement(model);
     model.first_token_idx = model.token_idx;
     var expr = ParseExpression(model);
     var last_token_idx = model.token_idx - 1;

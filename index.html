@@ -4,6 +4,15 @@
 <link rel="stylesheet" href="style.css?q=3">
 <script src="interview.js?z=4"></script>
 <script>
+function AdjustHeight(obj) {
+  var height = obj.style.height;
+  var idx = 0;
+  while (/[0-9]/.test(height[idx])) idx += 1;
+  height = Number(height.substr(0, idx));
+  if (height < obj.scrollHeight) {
+    obj.style.height=obj.scrollHeight + "px";
+  }
+}
 function Render() {
   var text=document.getElementById("definition").value;
   var model = Parse(text);
@@ -17,7 +26,7 @@ function Render() {
   var idx = 0;
   while (idx < model.expression_list.length) {
     var expr = model.expression_list[idx].expression;
-    str += ExpressionDebugString(model, expr) + " " + Evaluate(model, expr) +
+    str += ExpressionDebugString(model, expr) + " : " + Evaluate(model, expr) +
            "<br>"; 
     ++idx;
   }
@@ -34,7 +43,9 @@ function Render() {
 <div class=flex>
 <form>
 Interview Definition<br>
-<textarea id=definition>
+<textarea id=definition style="width: 290px;"
+  onfocus='AdjustHeight(this);'
+  oninput='AdjustHeight(this);'>
 /* stuff */
 a = "yes";
 y = "no";
