@@ -7,15 +7,26 @@ function ParseError(msg, token, model) {
         text.substr(idx + 1);
 }
 
+var unique = {};
+function CheckUnique(item) {
+  if (unique.hasOwnProperty(item)) {
+    throw "ERROR: duplicate internal term: [" + item + "]";
+  }
+  unique[item] = 1;
+  return item;
+}
+
 var KEYWORDS = ["form", "page", "message", "choices", "next"]
+KEYWORDS.map(CheckUnique);
 
 // Other types of tokens have exactly 1 character
-var WHITE_SPACE_TOKEN = "ws";
-var IDENTIFIER_TOKEN = "id";
-var COMMENT_TOKEN = "cmt";
-var DIGITS_TOKEN = "dgt"
-var STRING_TOKEN = "str"
-var NUMBER_TOKEN = "num"
+var WHITE_SPACE_TOKEN = CheckUnique("ws");
+var IDENTIFIER_TOKEN = CheckUnique("id");
+var COMMENT_TOKEN = CheckUnique("cmt");
+var DIGITS_TOKEN = CheckUnique("dgt");
+var STRING_TOKEN = CheckUnique("str)");
+var NUMBER_TOKEN = CheckUnique("num");
+var KEYWORD_TOKEN = CheckUnique("kwd");
 
 function Tokenize(model) {
   var WHITE_SPACE = /\s/;
@@ -71,6 +82,10 @@ function Tokenize(model) {
         idx += delim_length;
       }
       token[2] = idx - token[1];
+      if (KEYWORDS.find(
+          kwd => kwd == (text.substr(token[1], token[2])).toLowerCase())) {
+        token[0] = KEYWORD_TOKEN;
+      }
       tokens.push(token);
       continue;
     }

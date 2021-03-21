@@ -461,6 +461,47 @@ function TestTokenizeIdDelimitedStrings() {
   EXPECT_EQ(s.length, 52);
   EXPECT_EQ(tokens[1][2], 50);
 }
+function TestTokenizeKeywords() {
+  var str = "form";
+  var tokens = TokenizeForTest(str);
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], KEYWORD_TOKEN);
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 4);
+  EXPECT_EQ("form", str.substr(tokens[0][1], tokens[0][2]));
+
+  str = "page";
+  tokens = TokenizeForTest(str);
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], KEYWORD_TOKEN);
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 4);
+  EXPECT_EQ("page", str.substr(tokens[0][1], tokens[0][2]));
+
+  str = "message";
+  tokens = TokenizeForTest(str);
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], KEYWORD_TOKEN);
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 7);
+  EXPECT_EQ("message", str.substr(tokens[0][1], tokens[0][2]));
+
+  str = "choices";
+  tokens = TokenizeForTest(str);
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], KEYWORD_TOKEN);
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 7);
+  EXPECT_EQ("choices", str.substr(tokens[0][1], tokens[0][2]));
+
+  str = "next";
+  tokens = TokenizeForTest(str);
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], KEYWORD_TOKEN);
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 4);
+  EXPECT_EQ("next", str.substr(tokens[0][1], tokens[0][2]));
+}
 function TestFormNavigation() {
   // TODO: Enable this test.
   return;
@@ -506,6 +547,7 @@ function TestAll() {
   TestParseAndRunAssignmentsWithState();
   TestTokenizeIdDelimitedStrings();
   TestFormNavigation();
+  TestTokenizeKeywords();
   console.log("Test Complete.");
 }
 TestAll();

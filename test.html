@@ -2,8 +2,17 @@
 <html>
 <head>
 <link rel="stylesheet" href="style.css?q=3">
-<script src="interview.js?z=2"></script>
-<script src="interview_test.js?z=3"></script>
+<script>
+var LoadScript = function(path) {
+  var url = path + "?z=" + Math.random();
+  var script = document.createElement("script");
+  script.src = url;
+  document.head.appendChild(script);
+  console.log("loading ", url);
+}
+LoadScript("interview.js");
+LoadScript("interview_test.js");
+</script>
 </head>
 <body>
 <h1>Forms! - Unit test</h1>

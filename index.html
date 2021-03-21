@@ -2,7 +2,16 @@
 <html>
 <head>
 <link rel="stylesheet" href="style.css?q=3">
-<script src="interview.js?z=4"></script>
+<script>
+var LoadScript = function(path) {
+  var url = path + "?z=" + Math.random();
+  var script = document.createElement("script");
+  script.src = url;
+  document.head.appendChild(script);
+  console.log("loading ", url);
+}
+LoadScript("interview.js");
+</script>
 <script>
 function AdjustHeight(obj) {
   var height = obj.style.height;
@@ -51,7 +60,9 @@ a = "yes";
 y = "no";
 z = 1 + 3 * 4 / (1 + 1);
 x = 8;
+x;
 x = x + 1;
+x;
 </textarea><br>
 <button type="button" onclick="Render();">Run</button>
 </form>
