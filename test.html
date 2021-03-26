@@ -8,8 +8,9 @@ var LoadScript = function(path) {
   var script = document.createElement("script");
   script.src = url;
   document.head.appendChild(script);
-  console.log("loading ", url);
+  console.log("loading", url);
 }
+// TODO: Start the tests only after all scripts are loaded.
 LoadScript("interview.js");
 LoadScript("interview_test.js");
 </script>

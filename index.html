@@ -8,7 +8,7 @@ var LoadScript = function(path) {
   var script = document.createElement("script");
   script.src = url;
   document.head.appendChild(script);
-  console.log("loading ", url);
+  console.log("loading", url);
 }
 LoadScript("interview.js");
 </script>
@@ -43,6 +43,41 @@ function Render() {
   interview.innerHTML = str;
   return 1;
 }
+function Initialize() {
+  var str = "form US1040\n" +
+      "page start\n" +
+      "message zzzz\"You are at the start. What is going on?zzzz\"\n\n" +
+
+      "page page2\n" +
+      "message zzzz\"You are at page2.zzzz\"\n\n" +
+
+      "page page3\n" +
+      "message zzzz\"You are at page3.zzzz\"\n";
+  document.getElementById("definition").value = str;
+}
+function ConvertToJsString() {
+  var text=document.getElementById("definition").value;
+  var str = "<pre>var str = ";
+  var lines = text.split("\n");
+  var n = lines.length;
+  while (lines[n-1] == "") {
+    --n;
+  }
+  var i = 0;
+  while (i < n) {
+    var line = lines[i];
+    line = line.split("\"").join("\\\"");
+    if (i != 0) {
+      str += " +\n";
+    }
+    str += "  \"" + line + "\\n\"";
+    i++;
+  }
+  str += ";\n</pre>";
+  var interview = document.getElementById("interview");
+  interview.innerHTML = str;
+  return 1;
+}
 </script>
 </head>
 <body>
@@ -64,7 +99,9 @@ x;
 x = x + 1;
 x;
 </textarea><br>
+<button type="button" onclick="Initialize();">Initialize</button>
 <button type="button" onclick="Render();">Run</button>
+<button type="button" onclick="ConvertToJsString();">Convert to Js string</button>
 </form>
 </div>
 <div class=flex>

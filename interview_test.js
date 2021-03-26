@@ -238,9 +238,12 @@ function TestTokenizeBadNumbers() {
 }
 function TestCleanTokens() {
   var text = "  x /* hi */ = y 100.0 \" \" ;";
-  var tokens = TokenizeForTest(text)
-  EXPECT_EQ(tokens.length, 14);
-  tokens = CleanTokens(tokens, text);
+  var model = {};
+  model.text = text;
+  Tokenize(model);
+  EXPECT_EQ(model.tokens.length, 14);
+  CleanTokens(model);
+  var tokens = model.tokens;
   EXPECT_EQ(tokens.length, 6);
   var idx = 0;
   EXPECT_EQ(tokens[idx][0], IDENTIFIER_TOKEN);
@@ -502,6 +505,25 @@ function TestTokenizeKeywords() {
   EXPECT_EQ(tokens[0][2], 4);
   EXPECT_EQ("next", str.substr(tokens[0][1], tokens[0][2]));
 }
+function TestDefaultNavigation() {
+  // TODO: Enable this test.
+  return;
+  var model = Parse(
+      "form US1040 " +
+
+      "page start " +
+      "message zzzz\"You are at the start. What is going on?zzzz\" " +
+
+      "page page2 " +
+      "message zzzz\"You are at page2.zzzz\" " +
+
+      "page page3 " +
+      "message zzzz\"You are at page3.zzzz\" "
+  );
+  console.log(model);
+  RunModel(model);
+  // Next, Prev, Show Form, Show Data, Clear Data, History, Table of Contents
+}
 function TestFormNavigation() {
   // TODO: Enable this test.
   return;
@@ -510,15 +532,17 @@ function TestFormNavigation() {
 
       "page start " +
       "message zzzz\" You are at start. What is going on? zzzz\" " +
-      "choices [foo bar baz fall1 fall2]" +
-      "next start " +
+      "choices [foo bar baz]" +
+      "message zzzz\"More Choices?zzzz\" " +
+      "choices [x1 x2] " +
       
-      "page fall1 " +
-      "message zzzz\" The next page will be by default zzzz\" " +
+      "page x1 " +
+      "message \"X1\" " +
       
-      "page fall2 " +
-      "message zzzz\" You made it! zzzz\" " +
-      "next start " +
+      "page X2 " +
+      "message \"X2\" " +
+      "message \"Hi!\" " +
+      "choices [start] " +
 
       "page foo " +
       "message zzzz\" You chose foo! zzzz\" " +
@@ -537,6 +561,76 @@ function TestFormNavigation() {
   console.log(model);
   RunModel(model);
 }
+function TestFormWithData() {
+  // TODO: Enable this test.
+  return;
+  var model = Parse(
+      "form US1040 " +
+
+      "page start " +
+      "message zzzz\" You are at start. What is going on? zzzz\" " +
+      "x = 1;" +
+      "input line1: x;" +
+      "input line2: 5 + 5;" +
+      "choices [increment]" +
+
+      "page increment " +
+      "x = x + 1;" +
+      "message zzzz\"Done!zzzz\" " +
+      "message zzzz\"Now go back to start.zzzz\" " +
+      "choices [start]"
+  );
+  console.log(model);
+  RunModel(model);
+}
+function TestFormWithWorksheets() {
+  // TODO: Enable this test.
+  return;
+  var model = Parse(
+      "form US1040 " +
+
+      "page start " +
+      "message \"Blah Blah Blah\" " +
+      // Singleton worksheet
+      "worksheet standard_deduction " +
+      "Line7: standard_deduction.amount; " +
+      "message \"Enter your all your W2 forms:\" " +
+      // plural worksheets
+      "worksheets w2 " +
+      "Line10: w2.gross; " +
+      "Line11: w2.tax; " +
+
+      "form standard_deduction " +
+      "page one " +
+      // TODO: Lots to figure out here
+      "if not us1040.independent then " +
+      "  message \"We need gross income to compute std deduction for dependents.\" " +
+      "  message \"If you haven't already, go fill that in and come back.\" " +
+      "  gross = US1040.Line13;" +
+      "  amt = gross + 350; " +
+      "  if amt > 12000 then amt = 12000; end " +
+      "else " +
+      "  if us1040.married then " +
+      "    amt = 24000;" +
+      "  end "+
+      "  if us1040.head_of_house then " +
+      "    amt = 15000;" +
+      "  end "+
+      "end " +
+      "amount: amt" +
+
+      "form w2 " +
+      "page one " +
+      "message \"Blah Blah Blah\" " +
+      "employer: ;" +
+      "message \"Blah Blah Blah\" " +
+      "gross: ;" +
+      "message \"Blah Blah Blah\" " +
+      "tax: ;"
+  );
+  console.log(model);
+  RunModel(model);
+}
 function TestAll() {
   TestTokenizeNumbers();
   TestTokenizeOneToken();
@@ -546,8 +640,11 @@ function TestAll() {
   TestParseAndRunAssignments();
   TestParseAndRunAssignmentsWithState();
   TestTokenizeIdDelimitedStrings();
-  TestFormNavigation();
   TestTokenizeKeywords();
+  TestDefaultNavigation();
+  TestFormNavigation();
+  TestFormWithData();
+  TestFormWithWorksheets();
   console.log("Test Complete.");
 }
 TestAll();

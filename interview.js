@@ -24,9 +24,11 @@ var WHITE_SPACE_TOKEN = CheckUnique("ws");
 var IDENTIFIER_TOKEN = CheckUnique("id");
 var COMMENT_TOKEN = CheckUnique("cmt");
 var DIGITS_TOKEN = CheckUnique("dgt");
-var STRING_TOKEN = CheckUnique("str)");
+var STRING_TOKEN = CheckUnique("str");
 var NUMBER_TOKEN = CheckUnique("num");
 var KEYWORD_TOKEN = CheckUnique("kwd");
+
+var START = CheckUnique("START");
 
 function Tokenize(model) {
   var WHITE_SPACE = /\s/;
@@ -150,8 +152,9 @@ function Tokenize(model) {
   }
   model.tokens = tokens;
 }
-function CleanTokens(tokens, text) {
+function CleanTokens(model) {
   // Drop whitespace and comments.
+  var tokens = model.tokens;
   var clean_tokens = [];
   var idx = 0;
   while (idx < tokens.length) {
@@ -166,7 +169,7 @@ function CleanTokens(tokens, text) {
     clean_tokens.push(tokens[idx]);
     ++idx;
   }
-  return clean_tokens;
+  model.tokens = clean_tokens;
 }
 function TokenType(model, idx) {
   return model.tokens[idx][0];
@@ -205,7 +208,7 @@ function AppendBelowRight(node, new_node) {
 function HandleNewNode(model, curr, new_node) {
   var objects;
   var operators;
-  if (["head"].includes(curr.type)) {
+  if ([START].includes(curr.type)) {
     if ([IDENTIFIER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       return new_node;
@@ -214,13 +217,13 @@ function HandleNewNode(model, curr, new_node) {
   if ([IDENTIFIER_TOKEN].includes(curr.type)) {
     if (["="].includes(new_node.type)) {
       curr = curr.parent;
-      if (["head"].includes(curr.type)) {
+      if ([START].includes(curr.type)) {
         AppendBelowRight(curr, new_node);
         return new_node;
       }
     }
   }
-  operators = ["+", "-", "*", "/", "head", "(", "="];
+  operators = ["+", "-", "*", "/", START, "(", "="];
   objects = [NUMBER_TOKEN, "(", STRING_TOKEN, IDENTIFIER_TOKEN];
   if (operators.includes(curr.type)) {
     if (objects.includes(new_node.type)) {
@@ -256,9 +259,9 @@ function HandleNewNode(model, curr, new_node) {
   return new_node;
 }
 function ParseExpression(model) {
-  var head = {};
-  head.type = "head";
-  var curr = head;
+  var start = {};
+  start.type = START;
+  var curr = start;
   while (model.token_idx < model.tokens.length &&
          TokenType(model, model.token_idx) != ";") {
     var new_node = TokenToNode(model);
@@ -271,7 +274,7 @@ function ParseExpression(model) {
                model.tokens[model.first_token_idx],
                model);
   }
-  return head.right;
+  return start.right;
 }
 function ExpressionDebugString(model, expr) {
   if (expr.type == NUMBER_TOKEN) {
@@ -348,17 +351,18 @@ function RunModel(model) {
     Evaluate(model, model.expression_list[i].expression);
   }
 }
-function Parse(text) {
+function GetEmptyModel(text) {
   var model = {};
   model.text = text;
-  Tokenize(model);
-  model.statement_list = [];
   model.token_idx = 0;
   model.data = {};
-  // TODO: Don't pass out the tokens from Tokenize. Instead pass in a model.
-  // Then update errors in the model.
-  model.tokens = CleanTokens(model.tokens, text);
   model.expression_list = [];
+  return model;
+}
+function Parse(text) {
+  var model = GetEmptyModel(text);
+  Tokenize(model);
+  CleanTokens(model);
   while (model.token_idx < model.tokens.length) {
     model.first_token_idx = model.token_idx;
     var expr = ParseExpression(model);
