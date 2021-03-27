@@ -294,14 +294,10 @@ function TestParseAndRunAssignments() {
   EXPECT_EQ(model.data["x"], 1);
   EXPECT_EQ(model.data["y"], 2);
 
-  try {
-    model = Parse(" /* irrelevant */ x = \"needs a ;\"");
-    FAIL("Should throw an error.");
-  } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Unterminated Statement. Expected ; semicolon.\nidx = 18\n" +
-        " /* irrelevant */ x/* Here */ = \"needs a ;\"");
-  }
+  // TODO: Should we require a semicolon for the last expression?
+  model = Parse(" /* irrelevant */ x = \"doesn't need a ; lol\"");
+  expr = model.expression_list[0].expression;
+  EXPECT_EQ(ExpressionDebugString(model, expr), "x \"doesn't need a ; lol\" =");
 
   model = Parse("x = 13;");
   expr = model.expression_list[0].expression;
@@ -413,6 +409,46 @@ function TestParseAndRunAssignmentsWithState() {
   EXPECT_EQ(model.data["x"], 12);
   EXPECT_EQ(model.data["y"], 4);
 }
+function TestValidatingAssignments() {
+  try {
+    model = Parse("/* ; blah \" foo ; \" */; x=2;");
+    FAIL("/* ; blah \" foo ; \" */; x=2; Should throw an error.");
+  } catch(err) {
+    EXPECT_EQ(err,
+        "ERROR: Unexpected empty expression.\nidx = 22\n" +
+        "/* ; blah \" foo ; \" */;/* Here */ x=2;");
+  }
+
+  try {
+    model = Parse("/* ; blah \" foo ; \" */x=;");
+    FAIL("/* ; blah \" foo ; \" */x=; Should throw an error.");
+  } catch(err) {
+    EXPECT_EQ(err,
+        "ERROR: Unexpected missing right operand.\nidx = 23\n" +
+        "/* ; blah \" foo ; \" */x=/* Here */;");
+  }
+
+  try {
+    model = Parse("abc = ");
+    FAIL("abc =  Should throw an error.");
+  } catch(err) {
+    EXPECT_EQ(err,
+        "ERROR: Unexpected missing right operand.\nidx = 4\n" +
+        "abc =/* Here */ ");
+  }
+
+  try {
+    model = Parse("abc = ( 3 + 4;");
+    FAIL(" =  Should throw an error.");
+  } catch(err) {
+    EXPECT_EQ(err,
+        "ERROR: Unmatched parentheses.\nidx = 6\n" +
+        "abc = (/* Here */ 3 + 4;");
+  }
+
+  model = Parse("/* Should empty expressions parse? lol */");
+  EXPECT_EQ(model.expression_list.length, 0);
+}
 function TestTokenizeIdDelimitedStrings() {
   var tokens = TokenizeForTest("\"hello\n\n\rworld\"");
   EXPECT_EQ(tokens.length, 1);
@@ -468,7 +504,7 @@ function TestTokenizeKeywords() {
   var str = "form";
   var tokens = TokenizeForTest(str);
   EXPECT_EQ(tokens.length, 1);
-  EXPECT_EQ(tokens[0][0], KEYWORD_TOKEN);
+  EXPECT_EQ(tokens[0][0], FORM_KEYWORD);
   EXPECT_EQ(tokens[0][1], 0);
   EXPECT_EQ(tokens[0][2], 4);
   EXPECT_EQ("form", str.substr(tokens[0][1], tokens[0][2]));
@@ -476,7 +512,7 @@ function TestTokenizeKeywords() {
   str = "page";
   tokens = TokenizeForTest(str);
   EXPECT_EQ(tokens.length, 1);
-  EXPECT_EQ(tokens[0][0], KEYWORD_TOKEN);
+  EXPECT_EQ(tokens[0][0], PAGE_KEYWORD);
   EXPECT_EQ(tokens[0][1], 0);
   EXPECT_EQ(tokens[0][2], 4);
   EXPECT_EQ("page", str.substr(tokens[0][1], tokens[0][2]));
@@ -484,7 +520,7 @@ function TestTokenizeKeywords() {
   str = "message";
   tokens = TokenizeForTest(str);
   EXPECT_EQ(tokens.length, 1);
-  EXPECT_EQ(tokens[0][0], KEYWORD_TOKEN);
+  EXPECT_EQ(tokens[0][0], MESSAGE_KEYWORD);
   EXPECT_EQ(tokens[0][1], 0);
   EXPECT_EQ(tokens[0][2], 7);
   EXPECT_EQ("message", str.substr(tokens[0][1], tokens[0][2]));
@@ -492,7 +528,7 @@ function TestTokenizeKeywords() {
   str = "choices";
   tokens = TokenizeForTest(str);
   EXPECT_EQ(tokens.length, 1);
-  EXPECT_EQ(tokens[0][0], KEYWORD_TOKEN);
+  EXPECT_EQ(tokens[0][0], CHOICES_KEYWORD);
   EXPECT_EQ(tokens[0][1], 0);
   EXPECT_EQ(tokens[0][2], 7);
   EXPECT_EQ("choices", str.substr(tokens[0][1], tokens[0][2]));
@@ -500,14 +536,12 @@ function TestTokenizeKeywords() {
   str = "next";
   tokens = TokenizeForTest(str);
   EXPECT_EQ(tokens.length, 1);
-  EXPECT_EQ(tokens[0][0], KEYWORD_TOKEN);
+  EXPECT_EQ(tokens[0][0], NEXT_KEYWORD);
   EXPECT_EQ(tokens[0][1], 0);
   EXPECT_EQ(tokens[0][2], 4);
   EXPECT_EQ("next", str.substr(tokens[0][1], tokens[0][2]));
 }
 function TestDefaultNavigation() {
-  // TODO: Enable this test.
-  return;
   var model = Parse(
       "form US1040 " +
 
@@ -521,7 +555,10 @@ function TestDefaultNavigation() {
       "message zzzz\"You are at page3.zzzz\" "
   );
   console.log(model);
+  // TODO: Enable this test.
+  return;
   RunModel(model);
+  // TODO: Test these buttons:
   // Next, Prev, Show Form, Show Data, Clear Data, History, Table of Contents
 }
 function TestFormNavigation() {
@@ -639,6 +676,7 @@ function TestAll() {
   TestCleanTokens();
   TestParseAndRunAssignments();
   TestParseAndRunAssignmentsWithState();
+  TestValidatingAssignments();
   TestTokenizeIdDelimitedStrings();
   TestTokenizeKeywords();
   TestDefaultNavigation();

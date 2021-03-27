@@ -1,3 +1,4 @@
+// TODO: Maybe move all top level symbols under a single object.
 function ParseError(msg, token, model) {
   var idx = token[1];
   var text = model.text;
@@ -5,6 +6,17 @@ function ParseError(msg, token, model) {
         "\nidx = " + idx +
         "\n" + text.substr(0, idx + 1) + "/* Here */" +
         text.substr(idx + 1);
+}
+function ParseErrorPriorToken(msg, model) {
+  var idx = model.token_idx - 1;
+  if (idx < 0 || idx >= model.tokens.length) {
+    idx = 0;
+  }
+  if (idx < model.tokens.length) {
+    ParseError(msg, model.tokens[idx], model);
+  } else {
+    ParseError(msg, [0,0,0], model);
+  }
 }
 
 var unique = {};
@@ -16,17 +28,27 @@ function CheckUnique(item) {
   return item;
 }
 
-var KEYWORDS = ["form", "page", "message", "choices", "next"]
-KEYWORDS.map(CheckUnique);
+var KEYWORDS = [];
+function CheckUniqueKeyword(kwd) {
+  CheckUnique(kwd);
+  KEYWORDS.push(kwd);
+  return kwd;
+}
 
-// Other types of tokens have exactly 1 character
+var FORM_KEYWORD = CheckUniqueKeyword("form");
+var PAGE_KEYWORD = CheckUniqueKeyword("page");
+var MESSAGE_KEYWORD = CheckUniqueKeyword("message");
+var CHOICES_KEYWORD = CheckUniqueKeyword("choices");
+var NEXT_KEYWORD = CheckUniqueKeyword("next");
+
 var WHITE_SPACE_TOKEN = CheckUnique("ws");
 var IDENTIFIER_TOKEN = CheckUnique("id");
 var COMMENT_TOKEN = CheckUnique("cmt");
 var DIGITS_TOKEN = CheckUnique("dgt");
 var STRING_TOKEN = CheckUnique("str");
 var NUMBER_TOKEN = CheckUnique("num");
-var KEYWORD_TOKEN = CheckUnique("kwd");
+var SEMICOLON_TOKEN = CheckUnique(";");
+// Other types of tokens have exactly 1 character
 
 var START = CheckUnique("START");
 
@@ -84,9 +106,9 @@ function Tokenize(model) {
         idx += delim_length;
       }
       token[2] = idx - token[1];
-      if (KEYWORDS.find(
-          kwd => kwd == (text.substr(token[1], token[2])).toLowerCase())) {
-        token[0] = KEYWORD_TOKEN;
+      var token_str = text.substr(token[1], token[2]).toLowerCase();
+      if (KEYWORDS.find(kwd => kwd == token_str)) {
+        token[0] = token_str;
       }
       tokens.push(token);
       continue;
@@ -209,6 +231,48 @@ function HandleNewNode(model, curr, new_node) {
   var objects;
   var operators;
   if ([START].includes(curr.type)) {
+    if ([FORM_KEYWORD, PAGE_KEYWORD].includes(new_node.type)) {
+      AppendBelowRight(curr, new_node);
+      if (model.token_idx < model.tokens.length) {
+        curr = new_node;
+        new_node = TokenToNode(model);
+      }
+      if ([IDENTIFIER_TOKEN].includes(new_node.type)) {
+        AppendBelowRight(curr, new_node);
+        model.expression_end = true;
+        // TODO: Delete this hack.
+        // We have to rewind so the caller can detect we are at the end of the expression.
+        //model.token_idx -= 1;
+        return new_node;
+      }
+      ParseError("Expected Identfier after " + new_node.type + ".",
+                 model.tokens[model.first_token_idx],
+                 model);
+    }
+    if (MESSAGE_KEYWORD.includes(new_node.type)) {
+      AppendBelowRight(curr, new_node);
+      if (model.token_idx < model.tokens.length) {
+        curr = new_node;
+        new_node = TokenToNode(model);
+      }
+      if ([STRING_TOKEN].includes(new_node.type)) {
+        AppendBelowRight(curr, new_node);
+        model.expression_end = true;
+        // TODO: Delete this hack.
+        // We have to rewind so the caller can detect we are at the end of the expression.
+        //model.token_idx -= 1;
+        return new_node;
+      }
+      ParseError("Expected String after " + new_node.type + ".",
+                 model.tokens[model.first_token_idx],
+                 model);
+    }
+  }
+  if (SEMICOLON_TOKEN == new_node.type) {
+    model.expression_end = true;
+    return curr;
+  }
+  if ([START].includes(curr.type)) {
     if ([IDENTIFIER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       return new_node;
@@ -258,23 +322,67 @@ function HandleNewNode(model, curr, new_node) {
              new_node.token, model);
   return new_node;
 }
+function ValidateExpression(model, expr) {
+  if (expr == undefined) {
+    ParseErrorPriorToken("Unexpected empty expression.", model);
+  }
+  if ([FORM_KEYWORD, PAGE_KEYWORD].includes(expr.type)) {
+    if (expr.right.type == IDENTIFIER_TOKEN) {
+      return;
+    }
+    ParseError("Expected identifier for " + expr.type, model.tokens[idx], model);
+  }
+  if ([MESSAGE_KEYWORD].includes(expr.type)) {
+    if (expr.right.type == STRING_TOKEN) {
+      return;
+    }
+    ParseError("Expected string for message.", model.tokens[idx], model);
+  }
+  if (expr.type == NUMBER_TOKEN) {
+    // TODO: should we check if expr.right is a number?
+    return;
+  }
+  if (expr.type == STRING_TOKEN) {
+    // TODO: should we check if expr.right is a string?
+    return;
+  }
+  if (["+", "-", "*", "/", "="].includes(expr.type)) {
+    if (expr.left == undefined) {
+      ParseError("Unexpected missing left operand.", expr.token, model);
+    }
+    ValidateExpression(model, expr.left);
+    if (expr.right == undefined) {
+      ParseError("Unexpected missing right operand.", expr.token, model);
+    }
+    ValidateExpression(model, expr.right);
+    return;
+  }
+  if (expr.type == "()") {
+    ValidateExpression(model, expr.right);
+    return;
+  }
+  if (expr.type == "(") {
+    ParseError("Unmatched parentheses.", expr.token, model);
+  }
+  if (expr.type == IDENTIFIER_TOKEN) {
+    // TODO: should we check anything here?
+    return;
+  }
+  ParseError("Unexpected token during Parsing. ", expr.token, model);
+}
 function ParseExpression(model) {
   var start = {};
   start.type = START;
   var curr = start;
+  model.expression_end = false;
   while (model.token_idx < model.tokens.length &&
-         TokenType(model, model.token_idx) != ";") {
+         !model.expression_end) {
     var new_node = TokenToNode(model);
     curr = HandleNewNode(model, curr, new_node);
   }
-  if (model.token_idx < model.tokens.length) {
-    model.token_idx += 1;
-  } else {
-    ParseError("Unterminated Statement. Expected ; semicolon.",
-               model.tokens[model.first_token_idx],
-               model);
-  }
-  return start.right;
+  var expr = start.right;
+  ValidateExpression(model, expr);
+  return expr;
 }
 function ExpressionDebugString(model, expr) {
   if (expr.type == NUMBER_TOKEN) {
@@ -311,8 +419,8 @@ function ExpressionDebugString(model, expr) {
   }
   return "Unexpected expression type: " + expr.type;
 }
-// TODO: Abstract away the difference between model and expression.
-//       A model should also be an expression.
+// TODO: Maybe a model should also be an expression.
+//       We could abstract away the difference.
 // TODO: Optimize away the "()" nodes from the AST.
 function Evaluate(model, expr) {
   if (expr.type == NUMBER_TOKEN) {
@@ -346,6 +454,9 @@ function Evaluate(model, expr) {
   }
   ParseError("Unexpected token during Evaluation.", expr.token, model);
 }
+// TODO: Rename: RenderModel().
+// TODO: Accept a parameter with an HTML form to render the model into.
+// TODO: Fix unit tests that don't render anything to use Evaluate().
 function RunModel(model) {
   for (var i = 0; i < model.expression_list.length; ++i) {
     Evaluate(model, model.expression_list[i].expression);
