@@ -38,8 +38,7 @@ function CheckUniqueKeyword(kwd) {
 var FORM_KEYWORD = CheckUniqueKeyword("form");
 var PAGE_KEYWORD = CheckUniqueKeyword("page");
 var MESSAGE_KEYWORD = CheckUniqueKeyword("message");
-var CHOICES_KEYWORD = CheckUniqueKeyword("choices");
-var NEXT_KEYWORD = CheckUniqueKeyword("next");
+var BUTTON_KEYWORD = CheckUniqueKeyword("button");
 
 var WHITE_SPACE_TOKEN = CheckUnique("ws");
 var IDENTIFIER_TOKEN = CheckUnique("id");
@@ -485,7 +484,11 @@ function RenderExpression(model, expr) {
   Evaluate(model, expr);
   return "";
 }
+function RandomIdentifier(prefix) {
+  return prefix + String(Math.random()).substr(2);
+}
 function RenderModel(model, html_form) {
+  window.model = model;
   var page_info = model.pages[model.current_page];
   if (page_info !== undefined) {
     model.current_form = page_info.current_form;
@@ -505,7 +508,7 @@ function RenderModel(model, html_form) {
     str += RenderExpression(model, expr);
     ++idx;
   }
-  // TODO: Render the navigation buttons.
+  // Render the navigation buttons.
   if (page_info.hasOwnProperty("prev_page")) {
     var prev_page = page_info.prev_page;
     model.RenderPrevPage = function() {
@@ -528,6 +531,24 @@ function RenderModel(model, html_form) {
     delete model.RenderNextPage;
     str += "<button type='button' disabled>Next</button>";
   }
+  // Render the Developer Mode button
+  model.DeveloperMode = function() {
+    var dev_mode_textbox = RandomIdentifier("model_def_");
+    model.dev_mode_textbox = dev_mode_textbox;
+    model.Reload = function() {
+      var text=document.getElementById(dev_mode_textbox).value;
+      var model = Parse(text);
+      RenderModel(model, html_form);
+    }
+    var str = "<textarea id=" + dev_mode_textbox + ">"
+    str += model.text;
+    str += "</textarea><br>";
+    str += "<button type='button' onclick='model.Reload()'>Run</button>";
+    html_form.innerHTML = str;
+    // Make sure we can manually click run
+  }
+  str += "<button type='button' onclick='model.DeveloperMode();'>Developer</button>";
+  html_form.innerHTML = str;
   str += "<p>Form: " + page_info.current_form + " Page: " + model.current_page + "</p>"
   html_form.innerHTML = str;
 }

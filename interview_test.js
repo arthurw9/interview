@@ -590,21 +590,13 @@ function TestTokenizeKeywords() {
   EXPECT_EQ(tokens[0][2], 7);
   EXPECT_EQ("message", str.substr(tokens[0][1], tokens[0][2]));
 
-  str = "choices";
+  str = "button";
   tokens = TokenizeForTest(str);
   EXPECT_EQ(tokens.length, 1);
-  EXPECT_EQ(tokens[0][0], CHOICES_KEYWORD);
+  EXPECT_EQ(tokens[0][0], BUTTON_KEYWORD);
   EXPECT_EQ(tokens[0][1], 0);
-  EXPECT_EQ(tokens[0][2], 7);
-  EXPECT_EQ("choices", str.substr(tokens[0][1], tokens[0][2]));
-
-  str = "next";
-  tokens = TokenizeForTest(str);
-  EXPECT_EQ(tokens.length, 1);
-  EXPECT_EQ(tokens[0][0], NEXT_KEYWORD);
-  EXPECT_EQ(tokens[0][1], 0);
-  EXPECT_EQ(tokens[0][2], 4);
-  EXPECT_EQ("next", str.substr(tokens[0][1], tokens[0][2]));
+  EXPECT_EQ(tokens[0][2], 6);
+  EXPECT_EQ("button", str.substr(tokens[0][1], tokens[0][2]));
 }
 function TestDefaultNavigation() {
   var model = Parse(
@@ -622,7 +614,6 @@ function TestDefaultNavigation() {
   );
   var form = document.createElement("form");
   document.body.appendChild(form);
-  window.model = model;
   RenderModel(model, form);
   EXPECT_SUBSTR(form.innerHTML, "You are at the start.");
   EXPECT_SUBSTR(form.innerHTML, "Form: US1040");
@@ -649,12 +640,43 @@ function TestDefaultNavigation() {
   EXPECT_SUBSTR(form.innerHTML, "Page: start");
   EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), false);
   EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), true);
-  // For manual testing, don't remove the element.
+  // For manual testing, don't remove the form element.
   form.remove();
   // TODO: List all the buttons and click them. Make sure they work.
   // TODO: Implement and test all the remaining buttons:
-  // Next, Prev, Show Data, Clear Data, History,
-  // Developer: {Show Form, Show Form as Javascript}
+  // Next, Prev, Developer: { Run, To Javascript }
+  // History, Data { Back to Form, Clear },
+}
+function TestDeveloperMode() {
+  var model = Parse("");
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), false);
+  EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), false);
+  EXPECT_EQ(model.hasOwnProperty("Reload"), false);
+  model.DeveloperMode();
+  EXPECT_EQ(model.hasOwnProperty("Reload"), true);
+  var text = model.dev_mode_textbox;
+  EXPECT_SUBSTR(text, "model_def_");
+  // Write a new model dynamically
+  document.getElementById(text).value = "page a page b page c";
+  model.Reload();
+  // The old model is dead. Long live the new model.
+  model = window.model;
+  EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), false);
+  EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), true);
+  EXPECT_EQ(model.current_page, "a");
+  model.RenderNextPage();
+  EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), true);
+  EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), true);
+  EXPECT_EQ(model.current_page, "b");
+  model.RenderNextPage();
+  EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), true);
+  EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), false);
+  EXPECT_EQ(model.current_page, "c");
+  // For manual testing, don't remove the form element.
+  form.remove();
 }
 function TestFormNavigation() {
   // TODO: Enable this test.
@@ -664,9 +686,12 @@ function TestFormNavigation() {
 
       "page start " +
       "message zzzz\" You are at start. What is going on? zzzz\" " +
-      "choices [foo bar baz]" +
+      "button foo " +
+      "button bar " +
+      "button baz " +
       "message zzzz\"More Choices?zzzz\" " +
-      "choices [x1 x2] " +
+      "button x1 " +
+      "button x2 " +
       
       "page x1 " +
       "message \"X1\" " +
@@ -674,22 +699,19 @@ function TestFormNavigation() {
       "page X2 " +
       "message \"X2\" " +
       "message \"Hi!\" " +
-      "choices [start] " +
+      "button start " +
 
       "page foo " +
       "message zzzz\" You chose foo! zzzz\" " +
-      "choices [start bar baz] " +
-      "next foo " +
+      "button start button bar button baz " +
 
       "page bar " +
       "message zzzz\" You chose bar! zzzz\" " +
-      "choices [start baz] " +
-      "next bar " +
+      "button start button baz " +
 
       "page baz " +
       "message zzzz\" You chose baz! zzzz\" " +
-      "choices [start] " +
-      "next baz ");
+      "button start ");
   console.log(model);
   RunModel(model);
 }
@@ -704,13 +726,13 @@ function TestFormWithData() {
       "x = 1;" +
       "input line1: x;" +
       "input line2: 5 + 5;" +
-      "choices [increment]" +
+      "button increment " +
 
       "page increment " +
       "x = x + 1;" +
       "message zzzz\"Done!zzzz\" " +
       "message zzzz\"Now go back to start.zzzz\" " +
-      "choices [start]"
+      "button start"
   );
   console.log(model);
   RunModel(model);
@@ -764,6 +786,7 @@ function TestFormWithWorksheets() {
   RunModel(model);
 }
 function TestAll() {
+  console.log("Testing: START");
   TestTokenizeNumbers();
   TestTokenizeOneToken();
   TestTokenizeManyTokens();
@@ -777,10 +800,11 @@ function TestAll() {
   TestEvaluateStrings();
   TestTokenizeKeywords();
   TestDefaultNavigation();
+  TestDeveloperMode();
   TestFormNavigation();
   TestFormWithData();
   TestFormWithWorksheets();
-  console.log("Test Complete.");
+  console.log("Testing: DONE");
 }
 TestAll();
 
