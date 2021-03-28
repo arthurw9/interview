@@ -22,7 +22,7 @@ function AdjustHeight(obj) {
     obj.style.height=obj.scrollHeight + "px";
   }
 }
-function Render() {
+function OldRender() {
   var text=document.getElementById("definition").value;
   var model = Parse(text);
   RunModel(model);
@@ -43,16 +43,32 @@ function Render() {
   interview.innerHTML = str;
   return 1;
 }
+function Render() {
+  var text=document.getElementById("definition").value;
+  var model = Parse(text);
+  window.model = model;
+  var interview = document.getElementById("interview");
+  RenderModel(model, interview);
+  return 1;
+}
+
 function Initialize() {
-  var str = "form US1040\n" +
-      "page start\n" +
-      "message zzzz\"You are at the start. What is going on?zzzz\"\n\n" +
-
-      "page page2\n" +
-      "message zzzz\"You are at page2.zzzz\"\n\n" +
-
-      "page page3\n" +
-      "message zzzz\"You are at page3.zzzz\"\n";
+  var str =   "form US1040\n" +
+    "page start\n" +
+    "message \"You are at the start. What is going on?\"\n" +
+    "\n" +
+    "page page2\n" +
+    "message \"You are at page2.\"\n" +
+    "\n" +
+    "page page3\n" +
+    "message \"You are at page3.\"\n" +
+    "\n" +
+    "form worksheet1\n" +
+    "page w1p1\n" +
+    "message \"I am here.\"\n" +
+    "\n" +
+    "page w1p2\n" +
+    "message \"Are you here?\"\n";
   document.getElementById("definition").value = str;
 }
 function ConvertToJsString() {
@@ -100,8 +116,9 @@ x = x + 1;
 x;
 </textarea><br>
 <button type="button" onclick="Initialize();">Initialize</button>
-<button type="button" onclick="Render();">Run</button>
 <button type="button" onclick="ConvertToJsString();">Convert to Js string</button>
+<button type="button" onclick="OldRender();">Old Render</button>
+<button type="button" onclick="Render();">Render</button>
 </form>
 </div>
 <div class=flex>

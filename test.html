@@ -9,10 +9,12 @@ var LoadScript = function(path) {
   script.src = url;
   document.head.appendChild(script);
   console.log("loading", url);
+  return script;
 }
-// TODO: Start the tests only after all scripts are loaded.
-LoadScript("interview.js");
-LoadScript("interview_test.js");
+LoadScript("interview.js").onload = function() {
+  // Start testing only after the script is loaded.
+  LoadScript("interview_test.js");
+}
 </script>
 </head>
 <body>

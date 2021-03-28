@@ -231,42 +231,54 @@ function HandleNewNode(model, curr, new_node) {
   var objects;
   var operators;
   if ([START].includes(curr.type)) {
-    if ([FORM_KEYWORD, PAGE_KEYWORD].includes(new_node.type)) {
+    if ([FORM_KEYWORD, PAGE_KEYWORD, MESSAGE_KEYWORD].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
-      if (model.token_idx < model.tokens.length) {
-        curr = new_node;
-        new_node = TokenToNode(model);
-      }
-      if ([IDENTIFIER_TOKEN].includes(new_node.type)) {
-        AppendBelowRight(curr, new_node);
-        model.expression_end = true;
-        // TODO: Delete this hack.
-        // We have to rewind so the caller can detect we are at the end of the expression.
-        //model.token_idx -= 1;
-        return new_node;
-      }
-      ParseError("Expected Identfier after " + new_node.type + ".",
-                 model.tokens[model.first_token_idx],
-                 model);
+      return new_node;
     }
-    if (MESSAGE_KEYWORD.includes(new_node.type)) {
+  }
+  if ([FORM_KEYWORD, PAGE_KEYWORD].includes(curr.type)) {
+    if ([IDENTIFIER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
-      if (model.token_idx < model.tokens.length) {
-        curr = new_node;
-        new_node = TokenToNode(model);
+      model.expression_end = true;
+      if (curr.type == FORM_KEYWORD) {
+        model.current_form = String(new_node.right);
+        if (model.forms.hasOwnProperty(model.current_form)) {
+          ParseError("There is already a form named " + model.current_form,
+                     new_node.token, model);
+        }
+        model.forms[model.current_form] = model.expression_list.length;
       }
-      if ([STRING_TOKEN].includes(new_node.type)) {
-        AppendBelowRight(curr, new_node);
-        model.expression_end = true;
-        // TODO: Delete this hack.
-        // We have to rewind so the caller can detect we are at the end of the expression.
-        //model.token_idx -= 1;
-        return new_node;
+      if (curr.type == PAGE_KEYWORD) {
+        var prev_page = model.current_page;
+        model.current_page = String(new_node.right);
+        if (model.pages.hasOwnProperty(model.current_page)) {
+          ParseError("There is already a page named " + model.current_page,
+                     new_node.token, model);
+        }
+        var page_info = {};
+        page_info.current_form = model.current_form;
+        page_info.start_expr_idx = model.expression_list.length;
+        if (model.pages.hasOwnProperty(prev_page)) {
+          model.pages[prev_page].next_page = model.current_page;
+          page_info.prev_page = prev_page;
+        }
+        model.pages[model.current_page] = page_info;
       }
-      ParseError("Expected String after " + new_node.type + ".",
-                 model.tokens[model.first_token_idx],
-                 model);
+      return new_node;
     }
+    ParseError("Expected Identifier after " + curr.type + ".",
+               model.tokens[model.first_token_idx],
+               model);
+  }
+  if (MESSAGE_KEYWORD.includes(curr.type)) {
+    if ([STRING_TOKEN].includes(new_node.type)) {
+      AppendBelowRight(curr, new_node);
+      model.expression_end = true;
+      return new_node;
+    }
+    ParseError("Expected String after " + curr.type + ".",
+               model.tokens[model.first_token_idx],
+               model);
   }
   if (SEMICOLON_TOKEN == new_node.type) {
     model.expression_end = true;
@@ -327,16 +339,16 @@ function ValidateExpression(model, expr) {
     ParseErrorPriorToken("Unexpected empty expression.", model);
   }
   if ([FORM_KEYWORD, PAGE_KEYWORD].includes(expr.type)) {
-    if (expr.right.type == IDENTIFIER_TOKEN) {
+    if (expr.right != undefined && expr.right.type == IDENTIFIER_TOKEN) {
       return;
     }
-    ParseError("Expected identifier for " + expr.type, model.tokens[idx], model);
+    ParseErrorPriorToken("Expected identifier after " + expr.type, model);
   }
   if ([MESSAGE_KEYWORD].includes(expr.type)) {
-    if (expr.right.type == STRING_TOKEN) {
+    if (expr.right != undefined && expr.right.type == STRING_TOKEN) {
       return;
     }
-    ParseError("Expected string for message.", model.tokens[idx], model);
+    ParseErrorPriorToken("Expected identifier after " + expr.type, model);
   }
   if (expr.type == NUMBER_TOKEN) {
     // TODO: should we check if expr.right is a number?
@@ -419,6 +431,16 @@ function ExpressionDebugString(model, expr) {
   }
   return "Unexpected expression type: " + expr.type;
 }
+function RemoveQuotes(str) {
+  var idx = 0;
+  while (idx < str.length && str[idx] != "\"") {
+    idx++;
+  }
+  if (str.length < 2 * (idx + 1)) {
+    return "";
+  }
+  return str.substr(idx + 1, str.length - 2*(idx + 1));
+}
 // TODO: Maybe a model should also be an expression.
 //       We could abstract away the difference.
 // TODO: Optimize away the "()" nodes from the AST.
@@ -427,7 +449,7 @@ function Evaluate(model, expr) {
     return Number(expr.right);
   }
   if (expr.type == STRING_TOKEN) {
-    return String(expr.right);
+    return RemoveQuotes(String(expr.right));
   }
   if (expr.type == "+") {
     return Evaluate(model, expr.left) + Evaluate(model, expr.right);
@@ -445,30 +467,95 @@ function Evaluate(model, expr) {
     return Evaluate(model, expr.right);
   }
   if (expr.type == IDENTIFIER_TOKEN) {
+    // TODO: Get the data from a form.
     return model.data[expr.right];
   }
   if (expr.type == "=") {
     value = Evaluate(model, expr.right);
+    // TODO: Put the data into the current form instead of the top level model.
     model.data[expr.left.right] = value;
     return value;
   }
   ParseError("Unexpected token during Evaluation.", expr.token, model);
 }
-// TODO: Rename: RenderModel().
-// TODO: Accept a parameter with an HTML form to render the model into.
-// TODO: Fix unit tests that don't render anything to use Evaluate().
+function RenderExpression(model, expr) {
+  if (expr.type == MESSAGE_KEYWORD) {
+    return "<p>" + Evaluate(model, expr.right) + "</p>";
+  }
+  Evaluate(model, expr);
+  return "";
+}
+function RenderModel(model, html_form) {
+  var page_info = model.pages[model.current_page];
+  if (page_info !== undefined) {
+    model.current_form = page_info.current_form;
+  } else {
+    page_info = {};
+    page_info.current_form = model.current_form;
+    page_info.start_expr_idx = 0;
+  }
+  var str = "";
+  // +1 to skip past the page expression itself.
+  var idx = page_info.start_expr_idx + 1;
+  while (idx < model.expression_list.length) {
+    var expr = model.expression_list[idx].expression;
+    if ([PAGE_KEYWORD, FORM_KEYWORD].includes(expr.type)) {
+      break;
+    }
+    str += RenderExpression(model, expr);
+    ++idx;
+  }
+  // TODO: Render the navigation buttons.
+  if (page_info.hasOwnProperty("prev_page")) {
+    var prev_page = page_info.prev_page;
+    model.RenderPrevPage = function() {
+      model.current_page = prev_page;
+      RenderModel(model, html_form);
+    }
+    str += "<button type='button' onclick='model.RenderPrevPage();'>Prev</button>";
+  } else {
+    delete model.RenderPrevPage;
+    str += "<button type='button' disabled>Prev</button>";
+  }
+  if (page_info.hasOwnProperty("next_page")) {
+    var next_page = page_info.next_page;
+    model.RenderNextPage = function() {
+      model.current_page = next_page;
+      RenderModel(model, html_form);
+    }
+    str += "<button type='button' onclick='model.RenderNextPage();'>Next</button>";
+  } else {
+    delete model.RenderNextPage;
+    str += "<button type='button' disabled>Next</button>";
+  }
+  str += "<p>Form: " + page_info.current_form + " Page: " + model.current_page + "</p>"
+  html_form.innerHTML = str;
+}
 function RunModel(model) {
   for (var i = 0; i < model.expression_list.length; ++i) {
     Evaluate(model, model.expression_list[i].expression);
   }
 }
 function GetEmptyModel(text) {
+  // TODO: Should model be organized with sub-objects? (parse_info, runtime_status, data)
   var model = {};
   model.text = text;
   model.token_idx = 0;
   model.data = {};
   model.expression_list = [];
+  model.forms = {};
+  model.current_form = "";
+  model.pages = {};
+  model.current_page = "";
   return model;
+}
+function GoToFirstPage(model) {
+  if (model.hasOwnProperty("current_page") &&
+      model.pages.hasOwnProperty(model.current_page)) {
+    while(model.pages[model.current_page].hasOwnProperty("prev_page")) {
+      model.current_page = model.pages[model.current_page].prev_page;
+    }
+  }
 }
 function Parse(text) {
   var model = GetEmptyModel(text);
@@ -485,6 +572,7 @@ function Parse(text) {
           expression: expr
         });
   }
+  GoToFirstPage(model);
   return model;
 }
 

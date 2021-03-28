@@ -9,6 +9,10 @@ function EXPECT_INCLUDES(list, value) {
   if (list.includes(value)) return;
   console.trace("ERROR: Does not include [", value, "]: [", list, "]");
 }
+function EXPECT_SUBSTR(haystack, needle) {
+  if (haystack.includes(needle)) return;
+  console.trace("ERROR: Does contain substring [", needle, "]: [", haystack, "]");
+}
 
 function TokenizeForTest(str) {
   var model = {};
@@ -278,7 +282,7 @@ function TestParseAndRunAssignments() {
   var expr = model.expression_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr), "x \"hello world\" =");
   RunModel(model);
-  EXPECT_EQ(model.data["x"], "\"hello world\"");
+  EXPECT_EQ(model.data["x"], "hello world");
 
   model = Parse("x = 1; y = 2;");
   EXPECT_EQ(model.expression_list.length, 2);
@@ -449,6 +453,42 @@ function TestValidatingAssignments() {
   model = Parse("/* Should empty expressions parse? lol */");
   EXPECT_EQ(model.expression_list.length, 0);
 }
+function TestValidatingFormExpressions() {
+  try {
+    model = Parse("Form form");
+    FAIL("Form form Should throw an error.");
+  } catch(err) {
+    EXPECT_EQ(err,
+        "ERROR: Expected Identifier after form.\nidx = 0\n" +
+        "F/* Here */orm form");
+  }
+  try {
+    model = Parse("Form");
+    FAIL("Form Should throw an error.");
+  } catch(err) {
+    EXPECT_EQ(err,
+        "ERROR: Expected identifier after form\nidx = 0\n" +
+        "F/* Here */orm");
+  }
+
+  try {
+    model = Parse("PAGE pAgE");
+    FAIL("PAGE pAgE Should throw an error.");
+  } catch(err) {
+    EXPECT_EQ(err,
+        "ERROR: Expected Identifier after page.\nidx = 0\n" +
+        "P/* Here */AGE pAgE");
+  }
+
+  try {
+    model = Parse("PAGE");
+    FAIL("PAGE Should throw an error.");
+  } catch(err) {
+    EXPECT_EQ(err,
+        "ERROR: Expected identifier after page\nidx = 0\n" +
+        "P/* Here */AGE");
+  }
+}
 function TestTokenizeIdDelimitedStrings() {
   var tokens = TokenizeForTest("\"hello\n\n\rworld\"");
   EXPECT_EQ(tokens.length, 1);
@@ -499,6 +539,31 @@ function TestTokenizeIdDelimitedStrings() {
   EXPECT_EQ(tokens[1][1], 1);
   EXPECT_EQ(s.length, 52);
   EXPECT_EQ(tokens[1][2], 50);
+}
+function TestEvaluateStrings() {
+  var model = Parse("x = \"hello world\";");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], "hello world");
+
+  model = Parse("x = a\"hello to a world with a \"a\";");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], "hello to a world with a \"");
+
+  model = Parse("x = \"\";");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], "");
+
+  model = Parse("x = abc\"abc\";");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], "");
+
+  model = Parse("x = abc\"abcabc\";");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], "abc");
+
+  model = Parse("x = abc\"\"abc\";");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], "\"");
 }
 function TestTokenizeKeywords() {
   var str = "form";
@@ -551,15 +616,45 @@ function TestDefaultNavigation() {
       "page page2 " +
       "message zzzz\"You are at page2.zzzz\" " +
 
+      "form Schedule_A " +
       "page page3 " +
       "message zzzz\"You are at page3.zzzz\" "
   );
-  console.log(model);
-  // TODO: Enable this test.
-  return;
-  RunModel(model);
-  // TODO: Test these buttons:
-  // Next, Prev, Show Form, Show Data, Clear Data, History, Table of Contents
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  window.model = model;
+  RenderModel(model, form);
+  EXPECT_SUBSTR(form.innerHTML, "You are at the start.");
+  EXPECT_SUBSTR(form.innerHTML, "Form: US1040");
+  EXPECT_SUBSTR(form.innerHTML, "Page: start");
+  EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), false);
+  EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), true);
+  model.RenderNextPage();
+  EXPECT_SUBSTR(form.innerHTML, "You are at page2.");
+  EXPECT_SUBSTR(form.innerHTML, "Form: US1040");
+  EXPECT_SUBSTR(form.innerHTML, "Page: page2");
+  EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), true);
+  EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), true);
+  EXPECT_SUBSTR(form.innerHTML, "Form: US1040");
+  model.RenderNextPage();
+  EXPECT_SUBSTR(form.innerHTML, "You are at page3.");
+  EXPECT_SUBSTR(form.innerHTML, "Form: Schedule_A");
+  EXPECT_SUBSTR(form.innerHTML, "Page: page3");
+  EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), true);
+  EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), false);
+  model.RenderPrevPage();
+  model.RenderPrevPage();
+  EXPECT_SUBSTR(form.innerHTML, "What is going on?");
+  EXPECT_SUBSTR(form.innerHTML, "Form: US1040");
+  EXPECT_SUBSTR(form.innerHTML, "Page: start");
+  EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), false);
+  EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), true);
+  // For manual testing, don't remove the element.
+  form.remove();
+  // TODO: List all the buttons and click them. Make sure they work.
+  // TODO: Implement and test all the remaining buttons:
+  // Next, Prev, Show Data, Clear Data, History,
+  // Developer: {Show Form, Show Form as Javascript}
 }
 function TestFormNavigation() {
   // TODO: Enable this test.
@@ -677,7 +772,9 @@ function TestAll() {
   TestParseAndRunAssignments();
   TestParseAndRunAssignmentsWithState();
   TestValidatingAssignments();
+  TestValidatingFormExpressions();
   TestTokenizeIdDelimitedStrings();
+  TestEvaluateStrings();
   TestTokenizeKeywords();
   TestDefaultNavigation();
   TestFormNavigation();
