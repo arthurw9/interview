@@ -230,12 +230,13 @@ function HandleNewNode(model, curr, new_node) {
   var objects;
   var operators;
   if ([START].includes(curr.type)) {
-    if ([FORM_KEYWORD, PAGE_KEYWORD, PRINT_KEYWORD].includes(new_node.type)) {
+    if ([FORM_KEYWORD, PAGE_KEYWORD, PRINT_KEYWORD,
+         BUTTON_KEYWORD].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       return new_node;
     }
   }
-  if ([FORM_KEYWORD, PAGE_KEYWORD].includes(curr.type)) {
+  if ([FORM_KEYWORD, PAGE_KEYWORD, BUTTON_KEYWORD].includes(curr.type)) {
     if ([IDENTIFIER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       model.expression_end = true;
@@ -344,7 +345,7 @@ function ValidateExpression(model, expr) {
   if (expr == undefined) {
     ParseErrorPriorToken("Unexpected empty expression.", model);
   }
-  if ([FORM_KEYWORD, PAGE_KEYWORD].includes(expr.type)) {
+  if ([FORM_KEYWORD, PAGE_KEYWORD, BUTTON_KEYWORD].includes(expr.type)) {
     if (expr.right != undefined && expr.right.type == IDENTIFIER_TOKEN) {
       return;
     }
@@ -489,6 +490,12 @@ function RenderExpression(model, expr) {
   if (expr.type == PRINT_KEYWORD) {
     return "<p>" + Evaluate(model, expr.right) + "</p>";
   }
+  if (expr.type == BUTTON_KEYWORD) {
+    var destination_page = String(expr.right.right);
+    var str = "<button type='button' onclick='model.GoToPage(\"" +
+              destination_page + "\")'>" + destination_page + "</button>";
+    return str;
+  }
   Evaluate(model, expr);
   return "";
 }
@@ -516,7 +523,17 @@ function RenderModel(model, html_form) {
     str += RenderExpression(model, expr);
     ++idx;
   }
+  // GoToPage is used by the button keyword.
+  model.GoToPage = function(page) {
+    if (!model.pages.hasOwnProperty(page)) {
+      ParseErrorPriorToken("No such page found: " + page +
+                           ". Check capitalization?", model); 
+    }
+    model.current_page = page;
+    RenderModel(model, html_form);
+  }
   // Render the navigation buttons.
+  str += "<p>";
   if (page_info.hasOwnProperty("prev_page")) {
     var prev_page = page_info.prev_page;
     model.RenderPrevPage = function() {
@@ -578,6 +595,7 @@ function RenderModel(model, html_form) {
     // Make sure we can manually click run
   }
   str += "<button type='button' onclick='model.DeveloperMode();'>Developer</button>";
+  str += "</p>";
   html_form.innerHTML = str;
   str += "<p>Form: " + page_info.current_form + " Page: " + model.current_page + "</p>"
   html_form.innerHTML = str;
@@ -600,7 +618,7 @@ function GetEmptyModel(text) {
   model.current_page = "";
   return model;
 }
-function GoToFirstPage(model) {
+function FindFirstPage(model) {
   if (model.hasOwnProperty("current_page") &&
       model.pages.hasOwnProperty(model.current_page)) {
     while(model.pages[model.current_page].hasOwnProperty("prev_page")) {
@@ -623,7 +641,8 @@ function Parse(text) {
           expression: expr
         });
   }
-  GoToFirstPage(model);
+  // TODO: Make sure all button destination pages exist.
+  FindFirstPage(model);
   return model;
 }
 

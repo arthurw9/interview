@@ -13,7 +13,7 @@ var LoadScript = function(path) {
 }
 LoadScript("interview.js").onload = function() {
   // Start only after the script is loaded.
-  var str =   "form us1040\n" +
+  var str = "form us1040\n" +
     "  page p1\n" +
     "    print \"<h1>Hello</h1>\"\n" +
     "    z = \"x = \" + x;\n" +
@@ -21,18 +21,28 @@ LoadScript("interview.js").onload = function() {
     "    x = 1;\n" +
     "    z = \"x = \" + x;\n" +
     "    print z\n" +
+    "    button p2\n" +
+    "    button p3\n" +
+    "    button wk1p1\n" +
+    "    button wk1p2\n" +
     "  page p2\n" +
     "    x = x + 1;\n" +
     "    z = \"x = \" + x;\n" +
     "    print z\n" +
+    "    button p2\n" +
+    "\n" +
     "  page p3\n" +
     "    y = x + x;\n" +
     "    z = x + \" + \" + x + \" = \" + y;\n" +
     "    print z\n" +
+    "    button p1\n" +
+    "    button p2\n" +
     "\n" +
     "form wksht1\n" +
     "  page wk1p1\n" +
-    "  page wk1p2\n";
+    "    button p1\n" +
+    "  page wk1p2\n" +
+    "    button p1\n";
   var model = Parse(str);
   var interview = document.getElementById("interview");
   RenderModel(model, interview);

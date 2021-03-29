@@ -716,13 +716,11 @@ function TestPrintWithData() {
   form.remove();
 }
 function TestFormNavigation() {
-  // TODO: Enable this test.
-  return;
   var model = Parse(
       "form US1040 " +
 
       "page start " +
-      "print zzzz\" You are at start. What is going on? zzzz\" " +
+      "print \" You are at start.\" " +
       "button foo " +
       "button bar " +
       "button baz " +
@@ -731,26 +729,47 @@ function TestFormNavigation() {
       "button x2 " +
       
       "page x1 " +
-      "print \"X1\" " +
+      "print \"x1\" " +
       
-      "page X2 " +
-      "print \"X2\" " +
-      "print \"Hi!\" " +
+      "page x2 " +
+      "print \"x2\" " +
       "button start " +
 
       "page foo " +
-      "print zzzz\" You chose foo! zzzz\" " +
+      "print \"You chose foo!\" " +
       "button start button bar button baz " +
 
       "page bar " +
-      "print zzzz\" You chose bar! zzzz\" " +
+      "print \"You chose bar!\" " +
       "button start button baz " +
 
       "page baz " +
       "print zzzz\" You chose baz! zzzz\" " +
       "button start ");
-  console.log(model);
-  RunModel(model);
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  EXPECT_SUBSTR(form.innerHTML, "Page: start");
+  // I was expecting "\"" instead of "&quot;"
+  // Might be browser dependent?
+  var quote = "&quot;"; 
+  var prefix = "onclick=\"model.GoToPage(" + quote;
+  var suffix = quote + ")\">";
+  EXPECT_SUBSTR(form.innerHTML, prefix + "foo" + suffix);
+  EXPECT_SUBSTR(form.innerHTML, prefix + "bar" + suffix);
+  EXPECT_SUBSTR(form.innerHTML, prefix + "baz" + suffix);
+  EXPECT_SUBSTR(form.innerHTML, prefix + "x1" + suffix);
+  EXPECT_SUBSTR(form.innerHTML, prefix + "x2" + suffix);
+  // TODO: Figure out how to click the button instead of calling the method.
+  model.GoToPage("foo");
+  EXPECT_SUBSTR(form.innerHTML, "Page: foo");
+  EXPECT_SUBSTR(form.innerHTML, "You chose foo!");
+  EXPECT_SUBSTR(form.innerHTML, prefix + "start" + suffix);
+  EXPECT_SUBSTR(form.innerHTML, prefix + "bar" + suffix);
+  EXPECT_SUBSTR(form.innerHTML, prefix + "baz" + suffix);
+
+  // For manual testing, don't remove the form element.
+  form.remove();
 }
 function TestFormWithData() {
   // TODO: Enable this test.
@@ -771,7 +790,6 @@ function TestFormWithData() {
       "print zzzz\"Now go back to start.zzzz\" " +
       "button start"
   );
-  console.log(model);
   RunModel(model);
 }
 function TestFormWithWorksheets() {
@@ -819,7 +837,6 @@ function TestFormWithWorksheets() {
       "print \"Blah Blah Blah\" " +
       "tax: ;"
   );
-  console.log(model);
   RunModel(model);
 }
 function TestAll() {
