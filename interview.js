@@ -37,7 +37,7 @@ function CheckUniqueKeyword(kwd) {
 
 var FORM_KEYWORD = CheckUniqueKeyword("form");
 var PAGE_KEYWORD = CheckUniqueKeyword("page");
-var MESSAGE_KEYWORD = CheckUniqueKeyword("message");
+var PRINT_KEYWORD = CheckUniqueKeyword("print");
 var BUTTON_KEYWORD = CheckUniqueKeyword("button");
 
 var WHITE_SPACE_TOKEN = CheckUnique("ws");
@@ -230,7 +230,7 @@ function HandleNewNode(model, curr, new_node) {
   var objects;
   var operators;
   if ([START].includes(curr.type)) {
-    if ([FORM_KEYWORD, PAGE_KEYWORD, MESSAGE_KEYWORD].includes(new_node.type)) {
+    if ([FORM_KEYWORD, PAGE_KEYWORD, PRINT_KEYWORD].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       return new_node;
     }
@@ -269,13 +269,13 @@ function HandleNewNode(model, curr, new_node) {
                model.tokens[model.first_token_idx],
                model);
   }
-  if (MESSAGE_KEYWORD.includes(curr.type)) {
+  if (PRINT_KEYWORD.includes(curr.type)) {
     if ([STRING_TOKEN, IDENTIFIER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       model.expression_end = true;
       return new_node;
     }
-    ParseError("Expected String or identifier after message.",
+    ParseError("Expected String or identifier after print.",
                model.tokens[model.first_token_idx],
                model);
   }
@@ -350,12 +350,12 @@ function ValidateExpression(model, expr) {
     }
     ParseErrorPriorToken("Expected identifier after " + expr.type, model);
   }
-  if ([MESSAGE_KEYWORD].includes(expr.type)) {
+  if ([PRINT_KEYWORD].includes(expr.type)) {
     if (expr.right != undefined &&
         [STRING_TOKEN, IDENTIFIER_TOKEN].includes(expr.right.type)) {
       return;
     }
-    ParseErrorPriorToken("Expected string or identifier after message.", model);
+    ParseErrorPriorToken("Expected string or identifier after print.", model);
   }
   if (expr.type == NUMBER_TOKEN) {
     // TODO: should we check if expr.right is a number?
@@ -486,7 +486,7 @@ function Evaluate(model, expr) {
   ParseError("Unexpected token during Evaluation.", expr.token, model);
 }
 function RenderExpression(model, expr) {
-  if (expr.type == MESSAGE_KEYWORD) {
+  if (expr.type == PRINT_KEYWORD) {
     return "<p>" + Evaluate(model, expr.right) + "</p>";
   }
   Evaluate(model, expr);
@@ -569,7 +569,7 @@ function RenderModel(model, html_form) {
       jsStr += ";\n";
       window.prompt("foo", jsStr);
     }
-    var str = "<textarea id=" + dev_mode_textbox + ">"
+    var str = "<textarea id=" + dev_mode_textbox + " style='width: 400px; height: 340px'>"
     str += model.text;
     str += "</textarea><br>";
     str += "<button type='button' onclick='model.Reload()'>Run</button>";

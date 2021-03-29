@@ -15,9 +15,20 @@ LoadScript("interview.js").onload = function() {
   // Start only after the script is loaded.
   var str =   "form us1040\n" +
     "  page p1\n" +
-    "    message \"<h1>Hello</h1>\"\n" +
+    "    print \"<h1>Hello</h1>\"\n" +
+    "    z = \"x = \" + x;\n" +
+    "    print z\n" +
+    "    x = 1;\n" +
+    "    z = \"x = \" + x;\n" +
+    "    print z\n" +
     "  page p2\n" +
+    "    x = x + 1;\n" +
+    "    z = \"x = \" + x;\n" +
+    "    print z\n" +
     "  page p3\n" +
+    "    y = x + x;\n" +
+    "    z = x + \" + \" + x + \" = \" + y;\n" +
+    "    print z\n" +
     "\n" +
     "form wksht1\n" +
     "  page wk1p1\n" +

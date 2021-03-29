@@ -603,13 +603,13 @@ function TestTokenizeKeywords() {
   EXPECT_EQ(tokens[0][2], 4);
   EXPECT_EQ("page", str.substr(tokens[0][1], tokens[0][2]));
 
-  str = "message";
+  str = "print";
   tokens = TokenizeForTest(str);
   EXPECT_EQ(tokens.length, 1);
-  EXPECT_EQ(tokens[0][0], MESSAGE_KEYWORD);
+  EXPECT_EQ(tokens[0][0], PRINT_KEYWORD);
   EXPECT_EQ(tokens[0][1], 0);
-  EXPECT_EQ(tokens[0][2], 7);
-  EXPECT_EQ("message", str.substr(tokens[0][1], tokens[0][2]));
+  EXPECT_EQ(tokens[0][2], 5);
+  EXPECT_EQ("print", str.substr(tokens[0][1], tokens[0][2]));
 
   str = "button";
   tokens = TokenizeForTest(str);
@@ -624,14 +624,14 @@ function TestDefaultNavigation() {
       "form US1040 " +
 
       "page start " +
-      "message zzzz\"You are at the start. What is going on?zzzz\" " +
+      "print zzzz\"You are at the start. What is going on?zzzz\" " +
 
       "page page2 " +
-      "message zzzz\"You are at page2.zzzz\" " +
+      "print zzzz\"You are at page2.zzzz\" " +
 
       "form Schedule_A " +
       "page page3 " +
-      "message zzzz\"You are at page3.zzzz\" "
+      "print zzzz\"You are at page3.zzzz\" "
   );
   var form = document.createElement("form");
   document.body.appendChild(form);
@@ -699,14 +699,14 @@ function TestDeveloperMode() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestMessageWithData() {
+function TestPrintWithData() {
   var str =   "form foo " +
     "page one " +
     "x = 1; " +
     "s = \"hello\";" +
     "z = \"x=\" + x;" +
     "z = z + \", s=\" + s;\n" +
-    "message z\n";
+    "print z\n";
   var model = Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
@@ -722,32 +722,32 @@ function TestFormNavigation() {
       "form US1040 " +
 
       "page start " +
-      "message zzzz\" You are at start. What is going on? zzzz\" " +
+      "print zzzz\" You are at start. What is going on? zzzz\" " +
       "button foo " +
       "button bar " +
       "button baz " +
-      "message zzzz\"More Choices?zzzz\" " +
+      "print zzzz\"More Choices?zzzz\" " +
       "button x1 " +
       "button x2 " +
       
       "page x1 " +
-      "message \"X1\" " +
+      "print \"X1\" " +
       
       "page X2 " +
-      "message \"X2\" " +
-      "message \"Hi!\" " +
+      "print \"X2\" " +
+      "print \"Hi!\" " +
       "button start " +
 
       "page foo " +
-      "message zzzz\" You chose foo! zzzz\" " +
+      "print zzzz\" You chose foo! zzzz\" " +
       "button start button bar button baz " +
 
       "page bar " +
-      "message zzzz\" You chose bar! zzzz\" " +
+      "print zzzz\" You chose bar! zzzz\" " +
       "button start button baz " +
 
       "page baz " +
-      "message zzzz\" You chose baz! zzzz\" " +
+      "print zzzz\" You chose baz! zzzz\" " +
       "button start ");
   console.log(model);
   RunModel(model);
@@ -759,7 +759,7 @@ function TestFormWithData() {
       "form US1040 " +
 
       "page start " +
-      "message zzzz\" You are at start. What is going on? zzzz\" " +
+      "print zzzz\" You are at start. What is going on? zzzz\" " +
       "x = 1;" +
       "input line1: x;" +
       "input line2: 5 + 5;" +
@@ -767,8 +767,8 @@ function TestFormWithData() {
 
       "page increment " +
       "x = x + 1;" +
-      "message zzzz\"Done!zzzz\" " +
-      "message zzzz\"Now go back to start.zzzz\" " +
+      "print zzzz\"Done!zzzz\" " +
+      "print zzzz\"Now go back to start.zzzz\" " +
       "button start"
   );
   console.log(model);
@@ -781,11 +781,11 @@ function TestFormWithWorksheets() {
       "form US1040 " +
 
       "page start " +
-      "message \"Blah Blah Blah\" " +
+      "print \"Blah Blah Blah\" " +
       // Singleton worksheet
       "worksheet standard_deduction " +
       "Line7: standard_deduction.amount; " +
-      "message \"Enter your all your W2 forms:\" " +
+      "print \"Enter your all your W2 forms:\" " +
       // plural worksheets
       "worksheets w2 " +
       "Line10: w2.gross; " +
@@ -795,8 +795,8 @@ function TestFormWithWorksheets() {
       "page one " +
       // TODO: Lots to figure out here
       "if not us1040.independent then " +
-      "  message \"We need gross income to compute std deduction for dependents.\" " +
-      "  message \"If you haven't already, go fill that in and come back.\" " +
+      "  print \"We need gross income to compute std deduction for dependents.\" " +
+      "  print \"If you haven't already, go fill that in and come back.\" " +
       "  gross = US1040.Line13;" +
       "  amt = gross + 350; " +
       "  if amt > 12000 then amt = 12000; end " +
@@ -812,11 +812,11 @@ function TestFormWithWorksheets() {
 
       "form w2 " +
       "page one " +
-      "message \"Blah Blah Blah\" " +
+      "print \"Blah Blah Blah\" " +
       "employer: ;" +
-      "message \"Blah Blah Blah\" " +
+      "print \"Blah Blah Blah\" " +
       "gross: ;" +
-      "message \"Blah Blah Blah\" " +
+      "print \"Blah Blah Blah\" " +
       "tax: ;"
   );
   console.log(model);
@@ -839,7 +839,7 @@ function TestAll() {
   TestTokenizeKeywords();
   TestDefaultNavigation();
   TestDeveloperMode();
-  TestMessageWithData();
+  TestPrintWithData();
   TestFormNavigation();
   TestFormWithData();
   TestFormWithWorksheets();
