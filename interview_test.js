@@ -565,6 +565,27 @@ function TestEvaluateStrings() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], "\"");
 }
+function TestStringAddition() {
+  var model = Parse("x = \"hello \" + \"world\";");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], "hello world");
+
+  model = Parse("x = 12; y = x * x; z = x + \" squared = \" + y;");
+  RunModel(model);
+  EXPECT_EQ(model.data["z"], "12 squared = 144");
+
+  model = Parse("x = \"hello\"; z = \"x=\" + x;");
+  RunModel(model);
+  EXPECT_EQ(model.data["z"], "x=hello");
+
+  model = Parse("x = \"hello \" + 123 + \" there \"; x = x + x;");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], "hello 123 there hello 123 there ");
+
+  model = Parse("x = \"hello \" + 123 + 123;");
+  RunModel(model);
+  EXPECT_EQ(model.data["x"], "hello 123123");
+}
 function TestTokenizeKeywords() {
   var str = "form";
   var tokens = TokenizeForTest(str);
@@ -675,6 +696,22 @@ function TestDeveloperMode() {
   EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), true);
   EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), false);
   EXPECT_EQ(model.current_page, "c");
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
+function TestMessageWithData() {
+  var str =   "form foo " +
+    "page one " +
+    "x = 1; " +
+    "s = \"hello\";" +
+    "z = \"x=\" + x;" +
+    "z = z + \", s=\" + s;\n" +
+    "message z\n";
+  var model = Parse(str);
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  EXPECT_SUBSTR(form.innerHTML, "x=1, s=hello");
   // For manual testing, don't remove the form element.
   form.remove();
 }
@@ -798,9 +835,11 @@ function TestAll() {
   TestValidatingFormExpressions();
   TestTokenizeIdDelimitedStrings();
   TestEvaluateStrings();
+  TestStringAddition();
   TestTokenizeKeywords();
   TestDefaultNavigation();
   TestDeveloperMode();
+  TestMessageWithData();
   TestFormNavigation();
   TestFormWithData();
   TestFormWithWorksheets();

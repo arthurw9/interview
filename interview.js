@@ -270,12 +270,12 @@ function HandleNewNode(model, curr, new_node) {
                model);
   }
   if (MESSAGE_KEYWORD.includes(curr.type)) {
-    if ([STRING_TOKEN].includes(new_node.type)) {
+    if ([STRING_TOKEN, IDENTIFIER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       model.expression_end = true;
       return new_node;
     }
-    ParseError("Expected String after " + curr.type + ".",
+    ParseError("Expected String or identifier after message.",
                model.tokens[model.first_token_idx],
                model);
   }
@@ -329,6 +329,13 @@ function HandleNewNode(model, curr, new_node) {
       return new_node;
     }
   }
+  if ("+" == new_node.type) {
+    while ([STRING_TOKEN, "+"].includes(curr.type)) {
+      curr = curr.parent;
+    }
+    AppendBelowRight(curr, new_node);
+    return new_node;
+  }
   ParseError("Can't add " + new_node.type + " after " + curr.type,
              new_node.token, model);
   return new_node;
@@ -344,10 +351,11 @@ function ValidateExpression(model, expr) {
     ParseErrorPriorToken("Expected identifier after " + expr.type, model);
   }
   if ([MESSAGE_KEYWORD].includes(expr.type)) {
-    if (expr.right != undefined && expr.right.type == STRING_TOKEN) {
+    if (expr.right != undefined &&
+        [STRING_TOKEN, IDENTIFIER_TOKEN].includes(expr.right.type)) {
       return;
     }
-    ParseErrorPriorToken("Expected identifier after " + expr.type, model);
+    ParseErrorPriorToken("Expected string or identifier after message.", model);
   }
   if (expr.type == NUMBER_TOKEN) {
     // TODO: should we check if expr.right is a number?
@@ -540,10 +548,32 @@ function RenderModel(model, html_form) {
       var model = Parse(text);
       RenderModel(model, html_form);
     }
+    model.ToJavaScript = function() {
+      var text=document.getElementById(dev_mode_textbox).value;
+      var jsStr = "var str = ";
+      var lines = text.split("\n");
+      var n = lines.length;
+      while (lines[n-1] == "") {
+        --n;
+      }
+      var i = 0;
+      while (i < n) {
+        var line = lines[i];
+        line = line.split("\"").join("\\\"");
+        if (i != 0) {
+          jsStr += " +\n";
+        }
+        jsStr += "  \"" + line + "\\n\"";
+        i++;
+      }
+      jsStr += ";\n";
+      window.prompt("foo", jsStr);
+    }
     var str = "<textarea id=" + dev_mode_textbox + ">"
     str += model.text;
     str += "</textarea><br>";
     str += "<button type='button' onclick='model.Reload()'>Run</button>";
+    str += "<button type='button' onclick='model.ToJavaScript()'>To JS</button>";
     html_form.innerHTML = str;
     // Make sure we can manually click run
   }
