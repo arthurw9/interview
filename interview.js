@@ -584,7 +584,9 @@ function RenderModel(model, html_form) {
         i++;
       }
       jsStr += ";\n";
-      window.prompt("foo", jsStr);
+      var pre = document.createElement("pre");
+      pre.innerText = jsStr;
+      document.body.appendChild(pre);
     }
     var str = "<textarea id=" + dev_mode_textbox + " style='width: 400px; height: 340px'>"
     str += model.text;
