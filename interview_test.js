@@ -682,7 +682,7 @@ function TestDeveloperMode() {
   EXPECT_SUBSTR(text, "model_def_");
   // Write a new model dynamically
   document.getElementById(text).value = "page a page b page c";
-  model.Reload();
+  model.Reload(model);
   // The old model is dead. Long live the new model.
   model = window.model;
   EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), false);
