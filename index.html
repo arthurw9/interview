@@ -36,10 +36,9 @@ LoadScript("interview.js").onload = function() {
     "  print zz\"\n" +
     "<pre style=\"border: 1px solid black;\">\n" +
     "page first\n" +
-    "  print \"h1>Hello World/h1>\"\n" +
+    "  print \"&lt;h1&gt;Hello World&lt;/h1&gt;\"\n" +
     "</pre>\n" +
     "zz\"\n" +
-    "  print \"(oops I found a bug. put the angle brackets in for yourself. =))\"\n" +
     "  print \"Then press run.\"\n" +
     "  print \"Press next to continue.\"\n" +
     "  button Home\n" +
@@ -49,6 +48,10 @@ LoadScript("interview.js").onload = function() {
     "  print \"OK, I need to do some real work.\"\n" +
     "  print \"As much as I want to, I can't keep working on this now. Just press developer mode to see how I wrote this. I'll add some more examples.\"\n" +
     "  print \"The form keyword is meant to like a C struct data type. All data will live in the context of a form (eventually). If you don't create a form, then you are modifying variables in the form with empty name.\"\n" +
+    "  print \"Some gotcha's to keep in mind:\"\n" +
+    "  print \"<ul><li>print takes a single argument: Either a string literal or a variable. It can't take an expression.\"\n" +
+    "  print \"<li>??? You tell me! =)\"\n" +
+    "  print \"</ul>\"\n" +
     "  button assign_some_variables\n" +
     "  button modify_some_variables\n" +
     "  button print_some_variables\n" +

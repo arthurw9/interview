@@ -560,7 +560,11 @@ function RenderModel(model, html_form) {
   model.DeveloperMode = function() {
     var dev_mode_textbox = RandomIdentifier("model_def_");
     model.dev_mode_textbox = dev_mode_textbox;
-    model.Reload = function() {
+    model.Reload = function(model) {
+      if (model.js_str_element != null) {
+        var pre = document.getElementById(model.js_str_element);
+        pre.remove();
+      }
       var text=document.getElementById(dev_mode_textbox).value;
       var model = Parse(text);
       RenderModel(model, html_form);
@@ -584,16 +588,24 @@ function RenderModel(model, html_form) {
         i++;
       }
       jsStr += ";\n";
-      var pre = document.createElement("pre");
-      pre.innerText = jsStr;
-      document.body.appendChild(pre);
+      if (model.js_str_element == null) {
+        model.js_str_element = RandomIdentifier("js_str_");
+        var pre = document.createElement("pre");
+        pre.id = model.js_str_element;
+        pre.innerText = jsStr;
+        document.body.appendChild(pre);
+      } else {
+        var pre = document.getElementById(model.js_str_element);
+        pre.innerText = jsStr;
+      }
     }
     var str = "<textarea id=" + dev_mode_textbox + " style='width: 400px; height: 340px'>"
-    str += model.text;
     str += "</textarea><br>";
-    str += "<button type='button' onclick='model.Reload()'>Run</button>";
+    str += "<button type='button' onclick='model.Reload(model)'>Run</button>";
     str += "<button type='button' onclick='model.ToJavaScript()'>To JS</button>";
     html_form.innerHTML = str;
+    var textbox = document.getElementById(dev_mode_textbox);
+    textbox.value = model.text;
     // Make sure we can manually click run
   }
   str += "<button type='button' onclick='model.DeveloperMode();'>Developer</button>";
