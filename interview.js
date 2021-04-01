@@ -588,6 +588,12 @@ function RenderModel(model, html_form) {
         i++;
       }
       jsStr += ";\n";
+      navigator.clipboard.writeText(jsStr).then(
+        function() {
+          alert("Copied to clipboard.");
+        }, function() {
+          alert("Failed to copy to clipboard. See below for text.");
+        });
       if (model.js_str_element == null) {
         model.js_str_element = RandomIdentifier("js_str_");
         var pre = document.createElement("pre");
