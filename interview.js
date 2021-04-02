@@ -1,3 +1,14 @@
+(function(path) {
+  var url = path + "&z=" + Math.random();
+  var script = document.createElement("script");
+  script.src = url;
+  document.head.appendChild(script);
+  console.log("loading", url);
+})("https://www.googletagmanager.com/gtag/js?id=G-8KY282RL6T");
+window.dataLayer = window.dataLayer || [];
+gtag = window.gtag || function() {dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-8KY282RL6T');
 // TODO: Maybe move all top level symbols under a single object.
 function ParseError(msg, token, model) {
   var idx = token[1];

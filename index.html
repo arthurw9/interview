@@ -47,9 +47,10 @@ LoadScript("interview.js").onload = function() {
     "  print \"<h1>Tutorial</h1>\"\n" +
     "  print \"OK, I need to do some real work.\"\n" +
     "  print \"As much as I want to, I can't keep working on this now. Just press developer mode to see how I wrote this. I'll add some more examples.\"\n" +
-    "  print \"The form keyword is meant to like a C struct data type. All data will live in the context of a form (eventually). If you don't create a form, then you are modifying variables in the form with empty name.\"\n" +
+    "  print \"The form keyword is meant to be like a C struct data type. All data will live in the context of a form (eventually). If you don't create a form, then you are modifying variables in the form with empty name.\"\n" +
     "  print \"Some gotcha's to keep in mind:\"\n" +
     "  print \"<ul><li>print takes a single argument: Either a string literal or a variable. It can't take an expression.\"\n" +
+    "  print \"<li>button takes a single argument. It's an identifier but it's value is not evaluated. The name of the identifier must match the name of the page. For example this is a self link: page foo button foo\"\n" +
     "  print \"<li>??? You tell me! =)\"\n" +
     "  print \"</ul>\"\n" +
     "  button assign_some_variables\n" +
