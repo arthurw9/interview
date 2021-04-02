@@ -549,6 +549,11 @@ function RenderModel(model, html_form) {
     var prev_page = page_info.prev_page;
     model.RenderPrevPage = function() {
       model.current_page = prev_page;
+      gtag('event', 'select_item', {
+        items: [{
+          item_name: 'PrevPage',
+        }],
+      });
       RenderModel(model, html_form);
     }
     str += "<button type='button' onclick='model.RenderPrevPage();'>Prev</button>";
@@ -560,6 +565,11 @@ function RenderModel(model, html_form) {
     var next_page = page_info.next_page;
     model.RenderNextPage = function() {
       model.current_page = next_page;
+      gtag('event', 'select_item', {
+        items: [{
+          item_name: 'NextPage',
+        }],
+      });
       RenderModel(model, html_form);
     }
     str += "<button type='button' onclick='model.RenderNextPage();'>Next</button>";
@@ -571,16 +581,31 @@ function RenderModel(model, html_form) {
   model.DeveloperMode = function() {
     var dev_mode_textbox = RandomIdentifier("model_def_");
     model.dev_mode_textbox = dev_mode_textbox;
+    gtag('event', 'select_item', {
+      items: [{
+        item_name: 'DeveloperMode',
+      }],
+    });
     model.Reload = function(model) {
       if (model.js_str_element != null) {
         var pre = document.getElementById(model.js_str_element);
         pre.remove();
       }
+      gtag('event', 'select_item', {
+        items: [{
+          item_name: 'Reload',
+        }],
+      });
       var text=document.getElementById(dev_mode_textbox).value;
       var model = Parse(text);
       RenderModel(model, html_form);
     }
     model.ToJavaScript = function() {
+      gtag('event', 'select_item', {
+        items: [{
+          item_name: 'ToJs',
+        }],
+      });
       var text=document.getElementById(dev_mode_textbox).value;
       var jsStr = "  var str = ";
       var lines = text.split("\n");
