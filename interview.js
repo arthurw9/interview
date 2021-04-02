@@ -582,20 +582,22 @@ function RenderModel(model, html_form) {
     }
     model.ToJavaScript = function() {
       var text=document.getElementById(dev_mode_textbox).value;
-      var jsStr = "var str = ";
+      var jsStr = "  var str = ";
       var lines = text.split("\n");
       var n = lines.length;
       while (lines[n-1] == "") {
         --n;
       }
       var i = 0;
+      var indent = "";
       while (i < n) {
         var line = lines[i];
         line = line.split("\"").join("\\\"");
         if (i != 0) {
           jsStr += " +\n";
         }
-        jsStr += "  \"" + line + "\\n\"";
+        jsStr += indent + "\"" + line + "\\n\"";
+        indent = "    ";
         i++;
       }
       jsStr += ";\n";
