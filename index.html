@@ -14,6 +14,19 @@ var LoadScript = function(path) {
 LoadScript("interview.js").onload = function() {
   // Start only after the script is loaded.
   var str = "form Interview\n" +
+    "\n" +
+    "  button Home\n" +
+    "  button Tutorial\n" +
+    "  button Reference\n" +
+    "/* TODO: Implement me!\n" +
+    "  if show_variables then\n" +
+    "    print \"\"\n" +
+    "    button assign_some_variables\n" +
+    "    button modify_some_variables\n" +
+    "    button print_some_variables\n" +
+    "  endif\n" +
+    "*/\n" +
+    "\n" +
     "page Home\n" +
     "  print \"<h1>Interview</h1>\"\n" +
     "  print \"A simple interview language.\"\n" +
@@ -50,8 +63,50 @@ LoadScript("interview.js").onload = function() {
     "  print \"The form keyword is meant to be like a C struct data type. All data will live in the context of a form (eventually). If you don't create a form, then you are modifying variables in the form with empty name.\"\n" +
     "  print \"Some gotcha's to keep in mind:\"\n" +
     "  print \"<ul><li>print takes a single argument: Either a string literal or a variable. It can't take an expression.\"\n" +
-    "  print \"<li>button takes a single argument. It's an identifier but it's value is not evaluated. The name of the identifier must match the name of the page. For example this is a self link: page foo button foo\"\n" +
-    "  print \"<li>??? You tell me! =)\"\n" +
+    "  print \"<li>button takes a single argument. It's an identifier but it's value is not evaluated. The name of the identifier must match the name of the page. For example this is a self link: \"\n" +
+    "  print z\"\n" +
+    "    <pre style=\"border: 1px solid black;\">\n" +
+    "    page foo button foo\n" +
+    "    </pre>z\"\n" +
+    "  print z\"<li>Want to print quotes without\n" +
+    "    ending the print statement? The interview\n" +
+    "    language has a special quote syntax. Any\n" +
+    "    unique identifier with a quote at the end\n" +
+    "    is a quote. To end the quote just use the\n" +
+    "    same identifier. For example, try this:\n" +
+    "    <pre style=\"border: 1px solid black;\">\n" +
+    "    page foo print unique\"\n" +
+    "      Hi. We can use \"quotes\" here.\n" +
+    "      We can also use unique here.\n" +
+    "      To end the print statement\n" +
+    "      just use the same identifier and quote.\n" +
+    "      unique\"\n" +
+    "    </pre>z\"\n" +
+    "  print z\"<li>input takes an identifier as a single argument.\n" +
+    "    It lets the user enter values. The value is updated\n" +
+    "    only after the user leaves the input field.\n" +
+    "    But the page is not reloaded automatically when the\n" +
+    "    value chnages. Things that were already printed, don't\n" +
+    "    change until you reload the page. Try it:\n" +
+    "    <pre style=\"border: 1px solid black;\">\n" +
+    "      form foo\n" +
+    "      page refresh\n" +
+    "        print \"line1:\"\n" +
+    "        input line1\n" +
+    "        print \"line2:\"\n" +
+    "        input line2\n" +
+    " \n" +
+    "        z = \"Currently line1 = \" + line1;\n" +
+    "        print z\n" +
+    "        z = \"Currently line2 = \" + line2;\n" +
+    "        print z\n" +
+    "\n" +
+    "        z = \"line1 + line2 = \" + (line1 + line2);\n" +
+    "        print z\n" +
+    "        print \"\"\n" +
+    "        button refresh\n" +
+    "    </pre>z\"\n" +
+    "  print \"<li>What else? \"\n" +
     "  print \"</ul>\"\n" +
     "  button assign_some_variables\n" +
     "  button modify_some_variables\n" +

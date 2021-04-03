@@ -50,6 +50,7 @@ var FORM_KEYWORD = CheckUniqueKeyword("form");
 var PAGE_KEYWORD = CheckUniqueKeyword("page");
 var PRINT_KEYWORD = CheckUniqueKeyword("print");
 var BUTTON_KEYWORD = CheckUniqueKeyword("button");
+var INPUT_KEYWORD = CheckUniqueKeyword("input");
 
 var WHITE_SPACE_TOKEN = CheckUnique("ws");
 var IDENTIFIER_TOKEN = CheckUnique("id");
@@ -242,12 +243,13 @@ function HandleNewNode(model, curr, new_node) {
   var operators;
   if ([START].includes(curr.type)) {
     if ([FORM_KEYWORD, PAGE_KEYWORD, PRINT_KEYWORD,
-         BUTTON_KEYWORD].includes(new_node.type)) {
+         BUTTON_KEYWORD, INPUT_KEYWORD].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       return new_node;
     }
   }
-  if ([FORM_KEYWORD, PAGE_KEYWORD, BUTTON_KEYWORD].includes(curr.type)) {
+  if ([FORM_KEYWORD, PAGE_KEYWORD, BUTTON_KEYWORD,
+       INPUT_KEYWORD].includes(curr.type)) {
     if ([IDENTIFIER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       model.expression_end = true;
@@ -356,7 +358,8 @@ function ValidateExpression(model, expr) {
   if (expr == undefined) {
     ParseErrorPriorToken("Unexpected empty expression.", model);
   }
-  if ([FORM_KEYWORD, PAGE_KEYWORD, BUTTON_KEYWORD].includes(expr.type)) {
+  if ([FORM_KEYWORD, PAGE_KEYWORD, BUTTON_KEYWORD,
+       INPUT_KEYWORD].includes(expr.type)) {
     if (expr.right != undefined && expr.right.type == IDENTIFIER_TOKEN) {
       return;
     }
@@ -505,6 +508,31 @@ function RenderExpression(model, expr) {
     var destination_page = String(expr.right.right);
     var str = "<button type='button' onclick='model.GoToPage(\"" +
               destination_page + "\")'>" + destination_page + "</button>";
+    return str;
+  }
+  if (expr.type == INPUT_KEYWORD) {
+    if (!model.Read) {
+      model.Read = function(elem) {
+        if (elem.value == Number(elem.value)) {
+          model.data[elem.name] = Number(elem.value);
+        } else {
+          model.data[elem.name] = elem.value;
+        }
+      }
+    }
+    var identifier_name = expr.right.right;
+    var id = RandomIdentifier(identifier_name);
+    var str = "<input type=\"text\" name=\"" + identifier_name + 
+        "\" size=\"20\" id=" + id + " onblur=\"model.Read(this);\">";
+    // TODO: Need to verify:
+    // The same identifier should not input more than once on a page.
+    if (model.data.hasOwnProperty(identifier_name)) {
+      if (!model.InitializerList) {
+        model.InitializerList = [];
+      }
+      var current_value = Evaluate(model, expr.right);
+      model.InitializerList.push({id:id, value:current_value});
+    }
     return str;
   }
   Evaluate(model, expr);
@@ -657,6 +685,14 @@ function RenderModel(model, html_form) {
   html_form.innerHTML = str;
   str += "<p>Form: " + page_info.current_form + " Page: " + model.current_page + "</p>"
   html_form.innerHTML = str;
+  while (true) {
+    if (!model.InitializerList || model.InitializerList.length == 0) {
+      break;
+    }
+    var initializer = model.InitializerList.pop();
+    var elem = document.getElementById(initializer.id);
+    elem.value = initializer.value;
+  }
 }
 function RunModel(model) {
   for (var i = 0; i < model.expression_list.length; ++i) {

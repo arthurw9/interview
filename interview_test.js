@@ -663,9 +663,7 @@ function TestDefaultNavigation() {
   EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), true);
   // For manual testing, don't remove the form element.
   form.remove();
-  // TODO: List all the buttons and click them. Make sure they work.
   // TODO: Implement and test all the remaining buttons:
-  // Next, Prev, Developer: { Run, To Javascript }
   // History, Data { Back to Form, Clear },
 }
 function TestDeveloperMode() {
@@ -771,26 +769,75 @@ function TestFormNavigation() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
+function TestInputStatements() {
+  var str = "form US1040\n" +
+    "\n" +
+    "page enter\n" +
+    "print \"line1\"\n" +
+    "input line1\n" +
+    "print \"line2\"\n" +
+    "input line2\n" +
+    "print \"\"\n" +
+    "\n" +
+    "page assign\n" +
+    "line1 = \"foo\";\n" +
+    "line2 = 213;\n" +
+    "\n" +
+    "page show\n" +
+    "z = \"The new value of line1 is \" + line1;\n" +
+    "print z\n" +
+    "z = \"The new value of line2 is \" + line2;\n" +
+    "print z\n" +
+    "print \"Now overriding line1 after printing.\"\n" +
+    "print \"Now go back to start.\"\n";
+  var model = Parse(str);
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  EXPECT_SUBSTR(form.innerHTML, "Page: enter");
+  var inputs = document.getElementsByTagName('input');
+  EXPECT_EQ(inputs[0].name, "line1");
+  EXPECT_EQ(inputs[0].value, "");
+  EXPECT_EQ(inputs[1].name, "line2");
+  EXPECT_EQ(inputs[1].value, "");
+  model.GoToPage("show");
+  EXPECT_SUBSTR(form.innerHTML, "The new value of line1 is undefined");
+  EXPECT_SUBSTR(form.innerHTML, "The new value of line2 is undefined");
+  model.GoToPage("enter");
+  EXPECT_EQ(inputs[0].name, "line1");
+  EXPECT_EQ(inputs[0].value, "");
+  EXPECT_EQ(inputs[1].name, "line2");
+  EXPECT_EQ(inputs[1].value, "");
+
+  inputs[0].value = 777;
+  inputs[0].onblur();
+  inputs[1].value = "hello";
+  inputs[1].onblur();
+  model.GoToPage("show");
+  EXPECT_SUBSTR(form.innerHTML, "The new value of line1 is 777");
+  EXPECT_SUBSTR(form.innerHTML, "The new value of line2 is hello");
+  model.GoToPage("enter");
+  EXPECT_EQ(inputs[0].name, "line1");
+  EXPECT_EQ(inputs[0].value, 777);
+  EXPECT_EQ(inputs[1].name, "line2");
+  EXPECT_EQ(inputs[1].value, "hello");
+
+  model.GoToPage("assign");
+  model.GoToPage("show");
+  EXPECT_SUBSTR(form.innerHTML, "The new value of line1 is foo");
+  EXPECT_SUBSTR(form.innerHTML, "The new value of line2 is 213");
+  model.GoToPage("enter");
+  EXPECT_EQ(inputs[0].name, "line1");
+  EXPECT_EQ(inputs[0].value, "foo");
+  EXPECT_EQ(inputs[1].name, "line2");
+  EXPECT_EQ(inputs[1].value, 213);
+
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
 function TestFormWithData() {
   // TODO: Enable this test.
   return;
-  var model = Parse(
-      "form US1040 " +
-
-      "page start " +
-      "print zzzz\" You are at start. What is going on? zzzz\" " +
-      "x = 1;" +
-      "input line1: x;" +
-      "input line2: 5 + 5;" +
-      "button increment " +
-
-      "page increment " +
-      "x = x + 1;" +
-      "print zzzz\"Done!zzzz\" " +
-      "print zzzz\"Now go back to start.zzzz\" " +
-      "button start"
-  );
-  RunModel(model);
 }
 function TestFormWithWorksheets() {
   // TODO: Enable this test.
@@ -858,6 +905,7 @@ function TestAll() {
   TestDeveloperMode();
   TestPrintWithData();
   TestFormNavigation();
+  TestInputStatements();
   TestFormWithData();
   TestFormWithWorksheets();
   console.log("Testing: DONE");
