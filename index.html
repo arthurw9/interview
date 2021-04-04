@@ -15,17 +15,11 @@ LoadScript("interview.js").onload = function() {
   // Start only after the script is loaded.
   var str = "form Interview\n" +
     "\n" +
+    "  /* This top section runs on every page */\n" +
     "  button Home\n" +
     "  button Tutorial\n" +
-    "  button Reference\n" +
-    "/* TODO: Implement me!\n" +
-    "  if show_variables then\n" +
-    "    print \"\"\n" +
-    "    button assign_some_variables\n" +
-    "    button modify_some_variables\n" +
-    "    button print_some_variables\n" +
-    "  endif\n" +
-    "*/\n" +
+    " \n" +
+    "/* TODO: Make if statements work. */\n" +
     "\n" +
     "page Home\n" +
     "  print \"<h1>Interview</h1>\"\n" +
@@ -41,7 +35,7 @@ LoadScript("interview.js").onload = function() {
     "  print \"From there press Run to get back to the site.\"\n" +
     "  print \"Open a new window to see this tutorial \n" +
     "      while you make changes. Then click Next below.\"\n" +
-    "  button Home\n" +
+    "  button Input_Some_Variables\n" +
     "\n" +
     "page Tutorial2\n" +
     "  print \"<h1>Tutorial</h1>\"\n" +
@@ -56,7 +50,6 @@ LoadScript("interview.js").onload = function() {
     "      </pre>zz\"\n" +
     "  print \"Then press run.\"\n" +
     "  print \"Press next to continue.\"\n" +
-    "  button Home\n" +
     "\n" +
     "page Tutorial3\n" +
     "  print \"<h1>Tutorial</h1>\"\n" +
@@ -120,38 +113,53 @@ LoadScript("interview.js").onload = function() {
     "    </pre>z\"\n" +
     "  print \"<li>What else? \"\n" +
     "  print \"</ul>\"\n" +
-    "  button assign_some_variables\n" +
-    "  button modify_some_variables\n" +
-    "  button print_some_variables\n" +
-    "  button Home\n" +
     "\n" +
-    "page assign_some_variables\n" +
+    "page Initialize_Some_Variables\n" +
     "  num = 1;\n" +
     "  str = \"Hello World \";\n" +
     "  print \"Yay! You initialized some variables.\"\n" +
-    "  button assign_some_variables\n" +
-    "  button modify_some_variables\n" +
-    "  button print_some_variables\n" +
-    "  button Home\n" +
+    "  print \"num = 1;\"\n" +
+    "  print z\"str = \"Hello World\";z\"\n" +
+    "  print \"\"\n" +
+    "  button Initialize_Some_Variables\n" +
+    "  button Modify_Some_Variables\n" +
+    "  button Print_Some_Variables\n" +
+    "  button Input_Some_Variables\n" +
     "\n" +
-    "page print_some_variables\n" +
+    "page Print_Some_Variables\n" +
     "  z = \"num = \" + num;\n" +
     "  print z\n" +
     "  z = \"str = \" + str;\n" +
     "  print z\n" +
-    "  button assign_some_variables\n" +
-    "  button modify_some_variables\n" +
-    "  button print_some_variables\n" +
-    "  button Home\n" +
+    "  print \"\"\n" +
+    "  button Initialize_Some_Variables\n" +
+    "  button Modify_Some_Variables\n" +
+    "  button Print_Some_Variables\n" +
+    "  button Input_Some_Variables\n" +
     "\n" +
-    "page modify_some_variables\n" +
+    "page Modify_Some_Variables\n" +
     "  num = num + num;\n" +
     "  str = str + str;\n" +
     "  print \"Yay! You modified some variables.\"\n" +
-    "  button assign_some_variables\n" +
-    "  button modify_some_variables\n" +
-    "  button print_some_variables\n" +
-    "  button Home\n";
+    "  print \"num = num + num;\"\n" +
+    "  print \"str = str + str;\"\n" +
+    "  print \"\"\n" +
+    "  button Initialize_Some_Variables\n" +
+    "  button Modify_Some_Variables\n" +
+    "  button Print_Some_Variables\n" +
+    "  button Input_Some_Variables\n" +
+    "\n" +
+    "page Input_Some_Variables\n" +
+    "  print \"num: \"\n" +
+    "  input num\n" +
+    "  print \"str:\"\n" +
+    "  input str\n" +
+    "  print \"\"\n" +
+    "  button Initialize_Some_Variables\n" +
+    "  button Modify_Some_Variables\n" +
+    "  button Print_Some_Variables\n" +
+    "  button Input_Some_Variables\n" +
+    "  \n";
   var model = Parse(str);
   var interview = document.getElementById("interview");
   RenderModel(model, interview);

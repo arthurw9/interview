@@ -255,11 +255,6 @@ function HandleNewNode(model, curr, new_node) {
       model.expression_end = true;
       if (curr.type == FORM_KEYWORD) {
         model.current_form = String(new_node.right);
-        if (model.forms.hasOwnProperty(model.current_form)) {
-          ParseError("There is already a form named " + model.current_form,
-                     new_node.token, model);
-        }
-        model.forms[model.current_form] = model.expression_list.length;
       }
       if (curr.type == PAGE_KEYWORD) {
         var prev_page = model.current_page;
@@ -501,6 +496,12 @@ function Evaluate(model, expr) {
   ParseError("Unexpected token during Evaluation.", expr.token, model);
 }
 function RenderExpression(model, expr) {
+  if (expr.type == FORM_KEYWORD) {
+    if (expr.hasOwnProperty("right") && expr.right.type == IDENTIFIER_TOKEN) {
+      model.current_form = expr.right.right;
+      return "";
+    }
+  }
   if (expr.type == PRINT_KEYWORD) {
     return "<p>" + Evaluate(model, expr.right) + "</p>";
   }
@@ -543,6 +544,18 @@ function RandomIdentifier(prefix) {
 }
 function RenderModel(model, html_form) {
   window.model = model;
+  // Run the common code at the top on every page.
+  var idx = 0;
+  var str = "";
+  while (idx < model.expression_list.length) {
+    var expr = model.expression_list[idx].expression;
+    if ([PAGE_KEYWORD].includes(expr.type)) {
+      break;
+    }
+    str += RenderExpression(model, expr);
+    ++idx;
+  }
+  // Now run the page specific code.
   var page_info = model.pages[model.current_page];
   if (page_info !== undefined) {
     model.current_form = page_info.current_form;
@@ -551,12 +564,11 @@ function RenderModel(model, html_form) {
     page_info.current_form = model.current_form;
     page_info.start_expr_idx = 0;
   }
-  var str = "";
   // +1 to skip past the page expression itself.
   var idx = page_info.start_expr_idx + 1;
   while (idx < model.expression_list.length) {
     var expr = model.expression_list[idx].expression;
-    if ([PAGE_KEYWORD, FORM_KEYWORD].includes(expr.type)) {
+    if ([PAGE_KEYWORD].includes(expr.type)) {
       break;
     }
     str += RenderExpression(model, expr);
@@ -706,7 +718,6 @@ function GetEmptyModel(text) {
   model.token_idx = 0;
   model.data = {};
   model.expression_list = [];
-  model.forms = {};
   model.current_form = "";
   model.pages = {};
   model.current_page = "";

@@ -835,6 +835,33 @@ function TestInputStatements() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
+function TestRenderingRunsTheTopCodeForAllPages() {
+   var str = "/* This should run on every page */\n" +
+    "x = 11;\n" +
+    "y = \"hello\";\n" +
+    "print x\n" +
+    "print y\n" +
+    "\n" +
+    "page one\n" +
+    "  print \"did it work?\"\n" +
+    "\n" +
+    "page two\n" +
+    "  print \"did it work?\"\n";
+  var model = Parse(str);
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  EXPECT_SUBSTR(form.innerHTML, "Page: one");
+  EXPECT_SUBSTR(form.innerHTML, "11");
+  EXPECT_SUBSTR(form.innerHTML, "hello");
+  model.GoToPage("two");
+  EXPECT_SUBSTR(form.innerHTML, "Page: two");
+  EXPECT_SUBSTR(form.innerHTML, "11");
+  EXPECT_SUBSTR(form.innerHTML, "hello");
+
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
 function TestFormWithData() {
   // TODO: Enable this test.
   return;
@@ -906,6 +933,7 @@ function TestAll() {
   TestPrintWithData();
   TestFormNavigation();
   TestInputStatements();
+  TestRenderingRunsTheTopCodeForAllPages(); 
   TestFormWithData();
   TestFormWithWorksheets();
   console.log("Testing: DONE");
