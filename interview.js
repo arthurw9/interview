@@ -683,7 +683,7 @@ function RenderModel(model, html_form) {
         pre.innerText = jsStr;
       }
     }
-    var str = "<textarea id=" + dev_mode_textbox + " style='width: 400px; height: 340px'>"
+    var str = "<textarea id=" + dev_mode_textbox + " style='width: 475px; height: 360px'>"
     str += "</textarea><br>";
     str += "<button type='button' onclick='model.Reload(model)'>Run</button>";
     str += "<button type='button' onclick='model.ToJavaScript()'>To JS</button>";
