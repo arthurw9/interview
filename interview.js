@@ -9,7 +9,85 @@ window.dataLayer = window.dataLayer || [];
 gtag = window.gtag || function() {dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-8KY282RL6T');
-// TODO: Maybe move all top level symbols under a single object.
+// A top level object for this library.
+// TODO: Move all symbols under this object.
+var interview = {};
+interview.InitForms = function(model) {
+  // Maps form name to number of copies
+  model.num_form_copies = {};
+  // Maps form name to the idx of the current copy of that form.
+  model.curr_form_idx = {};
+  // Maps form name to array of data objects.
+  // Each data object maps symbol names to values.
+  // model.form_data[form_name][form_idx][name] -> value
+  model.form_data = {};
+  model.curr_form = "";
+}
+// Set the current form.
+interview.SetForm = function(model, form_name) {
+  if (!model.num_form_copies.hasOwnProperty(form_name)) {
+    model.num_form_copies[form_name] = 1;
+    model.curr_form_idx[form_name] = 0;
+    model.form_data[form_name] = [{}];
+  }
+  model.curr_form = form_name;
+}
+interview.GetDataObj = function(model) {
+  var form_name = model.curr_form;
+  var form_idx = model.curr_form_idx[form_name];
+  return model.form_data[form_name][form_idx];
+}
+interview.GetFormIdx = function(model) {
+  return model.curr_form_idx[model.curr_form];
+}
+interview.GetNumFormCopies = function(model) {
+  return model.num_form_copies[model.curr_form];
+}
+interview.NewFormCopy = function(model) {
+  var form_name = model.curr_form;
+  model.num_form_copies[form_name] += 1;
+  var form_idx = model.num_form_copies[form_name] - 1;
+  model.curr_form_idx[form_name] = form_idx;
+  model.form_data[form_name][form_idx] = {};
+}
+interview.DeleteFormCopy = function(model) {
+  var form_name = model.curr_form;
+  var num_copies = model.num_form_copies[form_name];
+  var form_idx = model.curr_form_idx[form_name];
+  while (form_idx < num_copies - 1) {
+    model.form_data[form_name][form_idx] =
+      model.form_data[form_name][form_idx + 1];
+    form_idx += 1;
+  }
+  // TODO: Should we allow the last form copy to be deleted?
+  if (num_copies > 1) {
+    num_copies -= 1;
+    model.num_form_copies[form_name] = num_copies;
+    model.form_data[form_name][num_copies] = null;
+  }
+  form_idx = model.curr_form_idx[form_name];
+  if (form_idx >= num_copies) {
+    form_idx -= 1;
+    model.curr_form_idx[form_name] = form_idx;
+  }
+}
+interview.SetFormIdx = function(model, new_idx) {
+  var form_name = model.curr_form;
+  var num_copies = model.num_form_copies[form_name];
+  if (new_idx < 0) {
+    new_idx = 0;
+  }
+  if (new_idx >= num_copies) {
+    new_idx = num_copies - 1;
+  }
+  model.curr_form_idx[form_name] = new_idx;
+}
+interview.IncrementFormIdx = function(model, amount) {
+  var form_name = model.curr_form;
+  var form_idx = model.curr_form_idx[form_name];
+  var new_idx = form_idx + amount;
+  interview.SetFormIdx(model, new_idx);
+}
 function ParseError(msg, token, model) {
   var idx = token[1];
   var text = model.text;

@@ -713,7 +713,7 @@ function TestPrintWithData() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestFormNavigation() {
+function TestPageNavigation() {
   var model = Parse(
       "form US1040 " +
 
@@ -862,11 +862,229 @@ function TestRenderingRunsTheTopCodeForAllPages() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestFormWithData() {
-  // TODO: Enable this test.
-  return;
+function TestBasicFormsLowLevel() {
+  var model = {};
+  interview.InitForms(model);
+  interview.SetForm(model, "US1040");
+  EXPECT_EQ(model.curr_form, "US1040");
+  EXPECT_EQ(interview.GetFormIdx(model), 0);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 1);
+  interview.SetForm(model, "US_W2");
+  EXPECT_EQ(model.curr_form, "US_W2");
+  EXPECT_EQ(interview.GetFormIdx(model), 0);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 1);
+  EXPECT_EQ(model.num_form_copies["US1040"], 1);
+  EXPECT_EQ(model.num_form_copies["US_W2"], 1);
+
+  interview.SetForm(model, "US1040");
+  EXPECT_EQ(model.curr_form, "US1040");
+  interview.GetDataObj(model).line_1 = "Hello 1040";
+  interview.SetForm(model, "US_W2");
+  EXPECT_EQ(model.curr_form, "US_W2");
+  interview.GetDataObj(model).line_1 = "Hello W2";
+  interview.SetForm(model, "US1040");
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "Hello 1040");
+  interview.SetForm(model, "US_W2");
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "Hello W2");
 }
-function TestFormWithWorksheets() {
+function TestMultipleCopiesOfFormsLowLevel() {
+  var model = {};
+  interview.InitForms(model);
+  interview.SetForm(model, "US1040");
+  EXPECT_EQ(model.curr_form, "US1040");
+  EXPECT_EQ(interview.GetFormIdx(model), 0);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 1);
+  interview.GetDataObj(model).line_1 = "First Copy";
+  interview.NewFormCopy(model);
+  EXPECT_EQ(interview.GetFormIdx(model), 1);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 2);
+  interview.GetDataObj(model).line_1 = "Second Copy";
+
+  interview.IncrementFormIdx(model, -1);
+  EXPECT_EQ(model.curr_form, "US1040");
+  EXPECT_EQ(interview.GetFormIdx(model), 0);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "First Copy");
+
+  interview.IncrementFormIdx(model, 0);
+  EXPECT_EQ(model.curr_form, "US1040");
+  EXPECT_EQ(interview.GetFormIdx(model), 0);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "First Copy");
+
+  interview.IncrementFormIdx(model, 1);
+  EXPECT_EQ(model.curr_form, "US1040");
+  EXPECT_EQ(interview.GetFormIdx(model), 1);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "Second Copy");
+
+  // Go past the bounds
+  interview.IncrementFormIdx(model, -2);
+  EXPECT_EQ(model.curr_form, "US1040");
+  EXPECT_EQ(interview.GetFormIdx(model), 0);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "First Copy");
+
+  interview.IncrementFormIdx(model, 2);
+  EXPECT_EQ(model.curr_form, "US1040");
+  EXPECT_EQ(interview.GetFormIdx(model), 1);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "Second Copy");
+}
+function TestDeleteFormLowLevel() {
+  var model = {};
+  interview.InitForms(model);
+  interview.SetForm(model, "US1040");
+  interview.GetDataObj(model).line_1 = "US1040 Copy 0";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 1";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 2";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 3";
+  EXPECT_EQ(interview.GetNumFormCopies(model), 4);
+
+  interview.SetFormIdx(model, 2);
+  EXPECT_EQ(interview.GetFormIdx(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
+
+  // Unit under test
+  interview.DeleteFormCopy(model);
+
+  EXPECT_EQ(interview.GetNumFormCopies(model), 3);
+  EXPECT_EQ(interview.GetFormIdx(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
+  interview.SetFormIdx(model, 3);
+  EXPECT_EQ(interview.GetFormIdx(model), 2);
+  interview.SetFormIdx(model, 1);
+  EXPECT_EQ(interview.GetFormIdx(model), 1);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 1");
+}
+function TestDeleteLastFormLowLevel() {
+  var model = {};
+  interview.InitForms(model);
+  interview.SetForm(model, "US1040");
+  interview.GetDataObj(model).line_1 = "US1040 Copy 0";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 1";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 2";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 3";
+  EXPECT_EQ(interview.GetNumFormCopies(model), 4);
+
+  interview.SetFormIdx(model, 3);
+  EXPECT_EQ(interview.GetFormIdx(model), 3);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
+
+  // unit under test
+  interview.DeleteFormCopy(model);
+
+  EXPECT_EQ(interview.GetNumFormCopies(model), 3);
+  EXPECT_EQ(interview.GetFormIdx(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
+  interview.SetFormIdx(model, 3);
+  EXPECT_EQ(interview.GetFormIdx(model), 2);
+}
+function TestDeleteFirstFormLowLevel() {
+  var model = {};
+  interview.InitForms(model);
+  interview.SetForm(model, "US1040");
+  interview.GetDataObj(model).line_1 = "US1040 Copy 0";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 1";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 2";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 3";
+  EXPECT_EQ(interview.GetNumFormCopies(model), 4);
+
+  interview.SetFormIdx(model, 0);
+  EXPECT_EQ(interview.GetFormIdx(model), 0);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 0");
+
+  // unit under test
+  interview.DeleteFormCopy(model);
+
+  EXPECT_EQ(interview.GetNumFormCopies(model), 3);
+  EXPECT_EQ(interview.GetFormIdx(model), 0);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 1");
+  interview.IncrementFormIdx(model, 1);
+  EXPECT_EQ(interview.GetFormIdx(model), 1);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
+  interview.IncrementFormIdx(model, 1);
+  EXPECT_EQ(interview.GetFormIdx(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
+}
+function TestMultipleCopiesOfFormsComplexLowLevel() {
+  var model = {};
+  interview.InitForms(model);
+  interview.SetForm(model, "US1040");
+  interview.GetDataObj(model).line_1 = "US1040 Copy 0";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 1";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 2";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US1040 Copy 3";
+  interview.SetForm(model, "US_W2");
+  interview.GetDataObj(model).line_1 = "US_W2 Copy 0";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US_W2 Copy 1";
+  interview.NewFormCopy(model);
+  interview.GetDataObj(model).line_1 = "US_W2 Copy 2";
+
+  interview.SetForm(model, "US1040");
+  EXPECT_EQ(interview.GetFormIdx(model), 3);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
+  interview.SetFormIdx(model, 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
+  interview.IncrementFormIdx(model, -2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 0");
+
+  interview.SetForm(model, "US_W2");
+  EXPECT_EQ(interview.GetFormIdx(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US_W2 Copy 2");
+
+  interview.SetForm(model, "US1040");
+  EXPECT_EQ(interview.GetFormIdx(model), 0);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 0");
+  interview.NewFormCopy(model);
+  EXPECT_EQ(interview.GetFormIdx(model), 4);
+  interview.DeleteFormCopy(model);
+  EXPECT_EQ(interview.GetFormIdx(model), 3);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
+
+  interview.SetForm(model, "US_W2");
+  EXPECT_EQ(interview.GetFormIdx(model), 2);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US_W2 Copy 2");
+  interview.DeleteFormCopy(model);
+  EXPECT_EQ(interview.GetFormIdx(model), 1);
+  EXPECT_EQ(interview.GetDataObj(model).line_1, "US_W2 Copy 1");
+}
+function TestBasicForms() {
+  var str = "form one\n" +
+    "form two\n";
+  var model = Parse(str);
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  // TODO: Verify there are 2 forms.
+  // TODO: Verify the current form is two.
+  // TODO: Set the current form to one.
+  // TODO: Verify there is no data yet.
+  // TODO: Put some data into the form.
+  // TODO: Set the current form to two.
+  // TODO: Verify there is no data yet.
+  // TODO: Put some data into the form.
+  // TODO: Set the current form to one.
+  // TODO: Verify the expected data is still there.
+  // TODO: Set the current form to two.
+  // TODO: Verify the expected data is still there.
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
+function TestMultipleCopiesOfForms() {
   // TODO: Enable this test.
   return;
   var model = Parse(
@@ -931,11 +1149,17 @@ function TestAll() {
   TestDefaultNavigation();
   TestDeveloperMode();
   TestPrintWithData();
-  TestFormNavigation();
+  TestPageNavigation();
   TestInputStatements();
   TestRenderingRunsTheTopCodeForAllPages(); 
-  TestFormWithData();
-  TestFormWithWorksheets();
+  TestBasicFormsLowLevel();
+  TestMultipleCopiesOfFormsLowLevel();
+  TestDeleteFormLowLevel();
+  TestDeleteLastFormLowLevel();
+  TestDeleteFirstFormLowLevel();
+  TestMultipleCopiesOfFormsComplexLowLevel();
+  TestBasicForms();
+  TestMultipleCopiesOfForms();
   console.log("Testing: DONE");
 }
 TestAll();
