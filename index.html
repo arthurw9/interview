@@ -53,24 +53,18 @@ LoadScript("interview.js").onload = function() {
     "\n" +
     "page Tutorial3\n" +
     "  print \"<h1>Tutorial</h1>\"\n" +
-    "  print \"OK, I need to do some real work.\"\n" +
-    "  print \"As much as I want to, I can't keep working on \n" +
-    "      this now. Just press developer mode to see how I\n" +
-    "      wrote this. I'll add some more examples.\"\n" +
-    "  print \"The form keyword is meant to be like a C struct\n" +
-    "      data type. All data will live in the context of a\n" +
-    "      form (eventually). If you don't create a form,\n" +
-    "      then you are modifying variables in the form with\n" +
-    "      empty name.\"\n" +
-    "  print \"Some gotcha's to keep in mind:\"\n" +
-    "  print \"<ul><li>print takes a single argument: Either a\n" +
-    "      string literal or a variable. It can't take an\n" +
-    "      expression.\"\n" +
-    "  print \"<li>button takes a single argument. It's an\n" +
-    "      identifier but it's value is not evaluated. The\n" +
-    "      name of the identifier must match the name of the\n" +
-    "      page. For example this is a self link: \"\n" +
-    "  print z\"\n" +
+    "  print \"Some things to keep in mind:\"\n" +
+    "  print \"<ul>\"\n" +
+    "  print \"<li>Press developer mode to see how I wrote\n" +
+    "      this tutorial.\"\n" +
+    "  print \"<li>The print keyword takes a single argument:\n" +
+    "      Either a string literal or a variable. It can't\n" +
+    "      take an expression.\"\n" +
+    "  print z\"<li>The button keyword takes a single\n" +
+    "      argument. It's an identifier but it's value is not\n" +
+    "      evaluated. The name of the identifier must match\n" +
+    "      the name of the page. For example this is a self\n" +
+    "      link:\n" +
     "      <pre style=\"border: 1px solid black;\">\n" +
     "      page foo button foo\n" +
     "      </pre>z\"\n" +
@@ -81,17 +75,19 @@ LoadScript("interview.js").onload = function() {
     "      is a quote. To end the quote just use the\n" +
     "      same identifier. For example, try this:\n" +
     "      <pre style=\"border: 1px solid black;\">\n" +
-    "      page foo print unique\"\n" +
+    "      page foo\n" +
+    "      print unique\"\n" +
     "        Hi. We can use \"quotes\" here. We can also use\n" +
-    "        unique here. To end the print statement just use\n" +
-    "        the same identifier and quote.unique\"\n" +
+    "        the work 'unique' here. But to end this string,\n" +
+    "        we have to put it together. Just use the same\n" +
+    "        identifier with a quote at the end.unique\"\n" +
     "      </pre>z\"\n" +
     "  print z\"<li>input takes an identifier as a single\n" +
     "      argument.  It lets the user enter values. The\n" +
     "      value is updated only after the user leaves the\n" +
     "      input field. But the page is not reloaded\n" +
-    "      automatically when the value chnages. Things that\n" +
-    "      were already printed, don't change until you\n" +
+    "      automatically when the value changes. Things that\n" +
+    "      were already printed, don't update until you\n" +
     "      reload the page. Try it:\n" +
     "      <pre style=\"border: 1px solid black;\">\n" +
     "      form foo\n" +
@@ -111,6 +107,35 @@ LoadScript("interview.js").onload = function() {
     "        print \"\"\n" +
     "        button refresh\n" +
     "    </pre>z\"\n" +
+    "  print \"<li>The top part of the code, before any page\n" +
+    "     keywords, runs before every page. Put any\n" +
+    "     formulas there and they will run before all pages.\n" +
+    "     Put visual elements there, like buttons, and they\n" +
+    "     will be rendered on top of all pages.\"\n" +
+    "  print \"<li>The form keyword is a container. All data\n" +
+    "      lives in the context of a form. If you don't\n" +
+    "      create a form, then any variables you set will\n" +
+    "      live in the default form with empty name. The same\n" +
+    "      variable can have different values in the\n" +
+    "      context of different forms. For example:\"\n" +
+    "  print z\"<pre style=\"border: 1px solid black;\">\n" +
+    "      button init button pg_a button pg_b button pg_c \n" +
+    "      page init\n" +
+    "        form a\n" +
+    "          line_1 = \"inside form a\";\n" +
+    "        form b\n" +
+    "          line_1 = \"inside form b\";\n" +
+    "      page pg_a\n" +
+    "        form a\n" +
+    "          print line_1\n" +
+    "      page pg_b\n" +
+    "        form b\n" +
+    "          print line_1\n" +
+    "      page pg_c\n" +
+    "        print line_1\n" +
+    "      </pre>z\"\n" +
+    "  print \"<li>If you don't specify the form, like on pg_c\n" +
+    "      above, then you get whatever form was last used.\"\n" +
     "  print \"<li>What else? \"\n" +
     "  print \"</ul>\"\n" +
     "\n" +
