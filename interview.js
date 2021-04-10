@@ -21,7 +21,7 @@ interview.InitForms = function(model) {
   // Each data object maps symbol names to values.
   // model.form_data[form_name][form_idx][name] -> value
   model.form_data = {};
-  model.curr_form = "";
+  interview.SetForm(model, "");
 }
 // Set the current form.
 interview.SetForm = function(model, form_name) {
@@ -31,6 +31,9 @@ interview.SetForm = function(model, form_name) {
     model.form_data[form_name] = [{}];
   }
   model.curr_form = form_name;
+  // Keeping model.data because otherwise there would
+  // be too many broken unit tests to fix.
+  model.data = interview.GetDataObj(model);
 }
 interview.GetDataObj = function(model) {
   var form_name = model.curr_form;
@@ -49,6 +52,7 @@ interview.NewFormCopy = function(model) {
   var form_idx = model.num_form_copies[form_name] - 1;
   model.curr_form_idx[form_name] = form_idx;
   model.form_data[form_name][form_idx] = {};
+  model.data = interview.GetDataObj(model);
 }
 interview.DeleteFormCopy = function(model) {
   var form_name = model.curr_form;
@@ -70,6 +74,7 @@ interview.DeleteFormCopy = function(model) {
     form_idx -= 1;
     model.curr_form_idx[form_name] = form_idx;
   }
+  model.data = interview.GetDataObj(model);
 }
 interview.SetFormIdx = function(model, new_idx) {
   var form_name = model.curr_form;
@@ -81,6 +86,7 @@ interview.SetFormIdx = function(model, new_idx) {
     new_idx = num_copies - 1;
   }
   model.curr_form_idx[form_name] = new_idx;
+  model.data = interview.GetDataObj(model);
 }
 interview.IncrementFormIdx = function(model, amount) {
   var form_name = model.curr_form;
@@ -332,7 +338,7 @@ function HandleNewNode(model, curr, new_node) {
       AppendBelowRight(curr, new_node);
       model.expression_end = true;
       if (curr.type == FORM_KEYWORD) {
-        model.current_form = String(new_node.right);
+        interview.SetForm(model, String(new_node.right));
       }
       if (curr.type == PAGE_KEYWORD) {
         var prev_page = model.current_page;
@@ -342,7 +348,6 @@ function HandleNewNode(model, curr, new_node) {
                      new_node.token, model);
         }
         var page_info = {};
-        page_info.current_form = model.current_form;
         page_info.start_expr_idx = model.expression_list.length;
         if (model.pages.hasOwnProperty(prev_page)) {
           model.pages[prev_page].next_page = model.current_page;
@@ -562,24 +567,25 @@ function Evaluate(model, expr) {
     return Evaluate(model, expr.right);
   }
   if (expr.type == IDENTIFIER_TOKEN) {
-    // TODO: Get the data from a form.
-    return model.data[expr.right];
+    var identifier = expr.right;
+    return model.data[identifier];
   }
   if (expr.type == "=") {
-    value = Evaluate(model, expr.right);
-    // TODO: Put the data into the current form instead of the top level model.
-    model.data[expr.left.right] = value;
+    var identifier = expr.left.right;
+    var value = Evaluate(model, expr.right);
+    model.data[identifier] = value;
     return value;
+  }
+  if (expr.type == FORM_KEYWORD) {
+    if (expr.hasOwnProperty("right") && expr.right.type == IDENTIFIER_TOKEN) {
+      var form_name = expr.right.right;
+      interview.SetForm(model, form_name);
+      return "";
+    }
   }
   ParseError("Unexpected token during Evaluation.", expr.token, model);
 }
 function RenderExpression(model, expr) {
-  if (expr.type == FORM_KEYWORD) {
-    if (expr.hasOwnProperty("right") && expr.right.type == IDENTIFIER_TOKEN) {
-      model.current_form = expr.right.right;
-      return "";
-    }
-  }
   if (expr.type == PRINT_KEYWORD) {
     return "<p>" + Evaluate(model, expr.right) + "</p>";
   }
@@ -635,11 +641,9 @@ function RenderModel(model, html_form) {
   }
   // Now run the page specific code.
   var page_info = model.pages[model.current_page];
-  if (page_info !== undefined) {
-    model.current_form = page_info.current_form;
-  } else {
+  if (page_info == undefined) {
+    // TODO: Is there any point in having a model without any pages?
     page_info = {};
-    page_info.current_form = model.current_form;
     page_info.start_expr_idx = 0;
   }
   // +1 to skip past the page expression itself.
@@ -773,7 +777,7 @@ function RenderModel(model, html_form) {
   str += "<button type='button' onclick='model.DeveloperMode();'>Developer</button>";
   str += "</p>";
   html_form.innerHTML = str;
-  str += "<p>Form: " + page_info.current_form + " Page: " + model.current_page + "</p>"
+  str += "<p>Form: " + model.curr_form + " Page: " + model.current_page + "</p>"
   html_form.innerHTML = str;
   while (true) {
     if (!model.InitializerList || model.InitializerList.length == 0) {
@@ -796,9 +800,9 @@ function GetEmptyModel(text) {
   model.token_idx = 0;
   model.data = {};
   model.expression_list = [];
-  model.current_form = "";
   model.pages = {};
   model.current_page = "";
+  interview.InitForms(model);
   return model;
 }
 function FindFirstPage(model) {

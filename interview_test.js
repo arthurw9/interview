@@ -622,15 +622,18 @@ function TestTokenizeKeywords() {
 function TestDefaultNavigation() {
   var model = Parse(
       "form US1040 " +
+      "form Schedule_A " +
 
       "page start " +
+      "form US1040 " +
       "print zzzz\"You are at the start. What is going on?zzzz\" " +
 
       "page page2 " +
+      "form US1040 " +
       "print zzzz\"You are at page2.zzzz\" " +
 
-      "form Schedule_A " +
       "page page3 " +
+      "form Schedule_A " +
       "print zzzz\"You are at page3.zzzz\" "
   );
   var form = document.createElement("form");
@@ -1063,24 +1066,45 @@ function TestMultipleCopiesOfFormsComplexLowLevel() {
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US_W2 Copy 1");
 }
 function TestBasicForms() {
-  var str = "form one\n" +
-    "form two\n";
+  var str = "button init button a button b button c\n" +
+    "page init\n" +
+    "  form one\n" +
+    "    line_1 = \"Current Form: one\";\n" +
+    "  form two\n" +
+    "    line_1 = \"Current Form: two\";\n" +
+    "page a\n" +
+    "  form one\n" +
+    "  print line_1\n" +
+    "page b\n" +
+    "  form two\n" +
+    "  print line_1\n" +
+    "page c\n" +
+    "  print line_1\n";
   var model = Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
   RenderModel(model, form);
-  // TODO: Verify there are 2 forms.
-  // TODO: Verify the current form is two.
-  // TODO: Set the current form to one.
-  // TODO: Verify there is no data yet.
-  // TODO: Put some data into the form.
-  // TODO: Set the current form to two.
-  // TODO: Verify there is no data yet.
-  // TODO: Put some data into the form.
-  // TODO: Set the current form to one.
-  // TODO: Verify the expected data is still there.
-  // TODO: Set the current form to two.
-  // TODO: Verify the expected data is still there.
+  // There are 3 forms because there is also a default form with empty name.
+  // I had to add a default form with empty name because otherwise too many
+  // unit tests would break.
+  EXPECT_EQ(Object.keys(model.curr_form_idx).length, 3);
+  EXPECT_EQ(model.curr_form, "two");
+  model.GoToPage("a");
+  EXPECT_EQ(model.curr_form, "one");
+  EXPECT_SUBSTR(form.innerHTML, "Current Form: one");
+  model.GoToPage("b");
+  EXPECT_EQ(model.curr_form, "two");
+  EXPECT_SUBSTR(form.innerHTML, "Current Form: two");
+  // This last part shows that the current form is retained between pages.
+  // TODO: Do we want this behavior?
+  model.GoToPage("b");
+  model.GoToPage("c");
+  EXPECT_EQ(model.curr_form, "two");
+  EXPECT_SUBSTR(form.innerHTML, "Current Form: two");
+  model.GoToPage("a");
+  model.GoToPage("c");
+  EXPECT_EQ(model.curr_form, "one");
+  EXPECT_SUBSTR(form.innerHTML, "Current Form: one");
   // For manual testing, don't remove the form element.
   form.remove();
 }
