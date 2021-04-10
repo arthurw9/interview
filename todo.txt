@@ -1,0 +1,33 @@
+Forms:
+- New form copy
+- Delete form copy
+- Next and Prev form copy
+- Get a stable Unique Id for a form copy
+- Get values from a different form and/or copy.
+- Create a list keyword to display a list form copies.
+
+Misc GUI:
+- Create a goto keyword to immediately render another page.
+- Create a page footer that runs and renders on the botton of every page.
+  - Put the navigation and developer buttons explicitly on the new page footer.
+
+Misc Language:
+- Create if statements.
+- Create while loops.
+
+Database Features:
+- Create sum function to sum values from all copies of a form.
+- Create count function to count copies of a form.
+- Create where clause for sum and count functions
+- Create foreign key constraints.
+
+IDE features:
+- Store all current data and state in a new page in the model before entering developer mode.
+- Put line numbers in the Developer text box.
+- Make parse time error messages show up in the Developer text box in red comments.
+- Make run time error messages show in an alert box. Maybe?
+
+Tutorial
+- Split the Tutorial into separate pages with small bits of the model in each page.
+- Create example applications in separate pages.
+
