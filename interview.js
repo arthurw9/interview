@@ -130,11 +130,15 @@ function CheckUniqueKeyword(kwd) {
   return kwd;
 }
 
-var FORM_KEYWORD = CheckUniqueKeyword("form");
 var PAGE_KEYWORD = CheckUniqueKeyword("page");
 var PRINT_KEYWORD = CheckUniqueKeyword("print");
 var BUTTON_KEYWORD = CheckUniqueKeyword("button");
 var INPUT_KEYWORD = CheckUniqueKeyword("input");
+var GOTO_KEYWORD = CheckUniqueKeyword("goto");
+var FORM_KEYWORD = CheckUniqueKeyword("form");
+var NEWCOPY_KEYWORD = CheckUniqueKeyword("newcopy");
+var NEXTCOPY_KEYWORD = CheckUniqueKeyword("nextcopy");
+var PREVCOPY_KEYWORD = CheckUniqueKeyword("prevcopy");
 
 var WHITE_SPACE_TOKEN = CheckUnique("ws");
 var IDENTIFIER_TOKEN = CheckUnique("id");
@@ -145,7 +149,7 @@ var NUMBER_TOKEN = CheckUnique("num");
 var SEMICOLON_TOKEN = CheckUnique(";");
 // Other types of tokens have exactly 1 character
 
-var START = CheckUnique("START");
+var START = CheckUnique("_start");
 
 function Tokenize(model) {
   var WHITE_SPACE = /\s/;
@@ -325,15 +329,29 @@ function AppendBelowRight(node, new_node) {
 function HandleNewNode(model, curr, new_node) {
   var objects;
   var operators;
+  // One word statements
+  if ([START].includes(curr.type)) {
+    if ([NEWCOPY_KEYWORD, NEXTCOPY_KEYWORD, PREVCOPY_KEYWORD].includes(new_node.type)) {
+      AppendBelowRight(curr, new_node);
+      model.expression_end = true;
+      return new_node;
+    }
+  }
+  // First word of two word statements
   if ([START].includes(curr.type)) {
     if ([FORM_KEYWORD, PAGE_KEYWORD, PRINT_KEYWORD,
-         BUTTON_KEYWORD, INPUT_KEYWORD].includes(new_node.type)) {
+         BUTTON_KEYWORD, INPUT_KEYWORD, GOTO_KEYWORD].includes(new_node.type)) {
+      if (GOTO_KEYWORD == new_node.type && Object.keys(model.pages).length == 0) {
+        ParseError("Cannot use the goto keyword in the model header.",
+                   new_node.token, model);
+      }
       AppendBelowRight(curr, new_node);
       return new_node;
     }
   }
+  // Second word of two word statements
   if ([FORM_KEYWORD, PAGE_KEYWORD, BUTTON_KEYWORD,
-       INPUT_KEYWORD].includes(curr.type)) {
+       INPUT_KEYWORD, GOTO_KEYWORD].includes(curr.type)) {
     if ([IDENTIFIER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       model.expression_end = true;
@@ -357,7 +375,8 @@ function HandleNewNode(model, curr, new_node) {
       }
       return new_node;
     }
-    ParseError("Expected Identifier after " + curr.type + ".",
+    ParseError("Expected Identifier after " + curr.type + ". Found " +
+                   new_node.type + " instead.",
                model.tokens[model.first_token_idx],
                model);
   }
@@ -371,6 +390,7 @@ function HandleNewNode(model, curr, new_node) {
                model.tokens[model.first_token_idx],
                model);
   }
+  // Expressions
   if (SEMICOLON_TOKEN == new_node.type) {
     model.expression_end = true;
     return curr;
@@ -436,8 +456,14 @@ function ValidateExpression(model, expr) {
   if (expr == undefined) {
     ParseErrorPriorToken("Unexpected empty expression.", model);
   }
+  // TODO: Should we check that left and right are empty?
+  if ([NEWCOPY_KEYWORD, NEXTCOPY_KEYWORD, PREVCOPY_KEYWORD].includes(expr.type)) {
+    return;
+  }
   if ([FORM_KEYWORD, PAGE_KEYWORD, BUTTON_KEYWORD,
-       INPUT_KEYWORD].includes(expr.type)) {
+       INPUT_KEYWORD, GOTO_KEYWORD].includes(expr.type)) {
+    // TODO: Should we check if page exists for button and goto keywords?
+    // TODO: Should we check for dead code after goto?
     if (expr.right != undefined && expr.right.type == IDENTIFIER_TOKEN) {
       return;
     }
@@ -583,6 +609,18 @@ function Evaluate(model, expr) {
       return "";
     }
   }
+  if (expr.type == NEWCOPY_KEYWORD) {
+    interview.NewFormCopy(model);
+    return "";
+  }
+  if (expr.type == NEXTCOPY_KEYWORD) {
+    interview.IncrementFormIdx(model, 1);
+    return "";
+  }
+  if (expr.type == PREVCOPY_KEYWORD) {
+    interview.IncrementFormIdx(model, -1);
+    return "";
+  }
   ParseError("Unexpected token during Evaluation.", expr.token, model);
 }
 function RenderExpression(model, expr) {
@@ -652,6 +690,14 @@ function RenderModel(model, html_form) {
     var expr = model.expression_list[idx].expression;
     if ([PAGE_KEYWORD].includes(expr.type)) {
       break;
+    }
+    // TODO: Should we detect and prevent infinite loops?
+    if (expr.type == GOTO_KEYWORD) {
+      model.current_page = expr.right.right;
+      page_info = model.pages[model.current_page];
+      // +1 to skip past the page expression itself.
+      idx = page_info.start_expr_idx + 1;
+      continue;
     }
     str += RenderExpression(model, expr);
     ++idx;
@@ -777,7 +823,11 @@ function RenderModel(model, html_form) {
   str += "<button type='button' onclick='model.DeveloperMode();'>Developer</button>";
   str += "</p>";
   html_form.innerHTML = str;
-  str += "<p>Form: " + model.curr_form + " Page: " + model.current_page + "</p>"
+  var form_idx = "[" + interview.GetFormIdx(model) + "]";
+  if (interview.GetNumFormCopies(model) == 0) {
+    form_idx = "";
+  }
+  str += "<p>Form: " + model.curr_form + form_idx + " Page: " + model.current_page + "</p>"
   html_form.innerHTML = str;
   while (true) {
     if (!model.InitializerList || model.InitializerList.length == 0) {

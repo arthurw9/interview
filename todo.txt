@@ -1,13 +1,10 @@
 Forms:
-- New form copy
 - Delete form copy
-- Next and Prev form copy
 - Get a stable Unique Id for a form copy
 - Get values from a different form and/or copy.
 - Create a list keyword to display a list form copies.
 
 GUI:
-- Create a goto keyword to immediately render another page.
 - Create a page footer that runs and renders on the botton of every page.
   - Put the navigation and developer buttons explicitly on the new page footer.
 

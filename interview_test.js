@@ -13,6 +13,11 @@ function EXPECT_SUBSTR(haystack, needle) {
   if (haystack.includes(needle)) return;
   console.trace("ERROR: Does contain substring [", needle, "]: [", haystack, "]");
 }
+function EXPECT_NOT_SUBSTR(haystack, needle) {
+  if (haystack.includes(needle)) {
+    console.trace("ERROR: Contains unexpected substring [", needle, "]: [", haystack, "]");
+  }
+}
 
 function TokenizeForTest(str) {
   var model = {};
@@ -459,7 +464,7 @@ function TestValidatingFormExpressions() {
     FAIL("Form form Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
-        "ERROR: Expected Identifier after form.\nidx = 0\n" +
+        "ERROR: Expected Identifier after form. Found form instead.\nidx = 0\n" +
         "F/* Here */orm form");
   }
   try {
@@ -476,7 +481,7 @@ function TestValidatingFormExpressions() {
     FAIL("PAGE pAgE Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
-        "ERROR: Expected Identifier after page.\nidx = 0\n" +
+        "ERROR: Expected Identifier after page. Found page instead.\nidx = 0\n" +
         "P/* Here */AGE pAgE");
   }
 
@@ -1095,7 +1100,7 @@ function TestBasicForms() {
   model.GoToPage("b");
   EXPECT_EQ(model.curr_form, "two");
   EXPECT_SUBSTR(form.innerHTML, "Current Form: two");
-  // This last part shows that the current form is retained between pages.
+  // This next part checks that the current form is retained between pages.
   // TODO: Do we want this behavior?
   model.GoToPage("b");
   model.GoToPage("c");
@@ -1108,52 +1113,108 @@ function TestBasicForms() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestMultipleCopiesOfForms() {
-  // TODO: Enable this test.
-  return;
-  var model = Parse(
-      "form US1040 " +
-
-      "page start " +
-      "print \"Blah Blah Blah\" " +
-      // Singleton worksheet
-      "worksheet standard_deduction " +
-      "Line7: standard_deduction.amount; " +
-      "print \"Enter your all your W2 forms:\" " +
-      // plural worksheets
-      "worksheets w2 " +
-      "Line10: w2.gross; " +
-      "Line11: w2.tax; " +
-
-      "form standard_deduction " +
-      "page one " +
-      // TODO: Lots to figure out here
-      "if not us1040.independent then " +
-      "  print \"We need gross income to compute std deduction for dependents.\" " +
-      "  print \"If you haven't already, go fill that in and come back.\" " +
-      "  gross = US1040.Line13;" +
-      "  amt = gross + 350; " +
-      "  if amt > 12000 then amt = 12000; end " +
-      "else " +
-      "  if us1040.married then " +
-      "    amt = 24000;" +
-      "  end "+
-      "  if us1040.head_of_house then " +
-      "    amt = 15000;" +
-      "  end "+
-      "end " +
-      "amount: amt" +
-
-      "form w2 " +
-      "page one " +
-      "print \"Blah Blah Blah\" " +
-      "employer: ;" +
-      "print \"Blah Blah Blah\" " +
-      "gross: ;" +
-      "print \"Blah Blah Blah\" " +
-      "tax: ;"
-  );
-  RunModel(model);
+function TestGotoKeyword() {
+  var str = "button a\n" +
+    "button b\n" +
+    "print \"\"\n" +
+    "\n" +
+    "page c\n" +
+    "  print \"hello c\"\n" +
+    "\n" +
+    "page a\n" +
+    "  print \"hello a\"\n" +
+    "  goto c\n" +
+    "\n" +
+    "page b\n" +
+    "  print \"hello b\"\n" +
+    "  goto c\n";
+  var model = Parse(str);
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  EXPECT_NOT_SUBSTR(form.innerHTML, "hello a");
+  EXPECT_NOT_SUBSTR(form.innerHTML, "hello b");
+  EXPECT_SUBSTR(form.innerHTML, "hello c");
+  model.GoToPage("a");
+  EXPECT_SUBSTR(form.innerHTML, "hello a");
+  EXPECT_NOT_SUBSTR(form.innerHTML, "hello b");
+  EXPECT_SUBSTR(form.innerHTML, "hello c");
+  model.GoToPage("b");
+  EXPECT_NOT_SUBSTR(form.innerHTML, "hello a");
+  EXPECT_SUBSTR(form.innerHTML, "hello b");
+  EXPECT_SUBSTR(form.innerHTML, "hello c");
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
+function TestGotoKeywordInHeader() {
+  var str = "button a\n" +
+    "goto b\n" +
+    "page a\n" +
+    "page b\n";
+  try {
+    var model = Parse(str);
+    FAIL("Should throw an error because of goto in header but didn't.");
+  } catch(err) {
+    EXPECT_EQ(err,
+        "ERROR: Cannot use the goto keyword in the model header.\n" +
+        "idx = 9\n" +
+        "button a\n" +
+        "g/* Here */oto b\n" +
+        "page a\n" +
+        "page b\n");
+  }
+}
+function TestCreateMultipleCopiesOfForms() {
+  var str = "form US1040\n" +
+    "\n" +
+    "page edit_w2\n" +
+    "  form W2\n" +
+    "  input employer\n" +
+    "  print \"\"\n" +
+    "  button prev_w2\n" +
+    "  button next_w2\n" +
+    "  print \"\"\n" +
+    "  button new_w2\n" +
+    "\n" +
+    "page next_w2\n" +
+    "  form W2\n" +
+    "  nextcopy\n" +
+    "  goto edit_w2\n" +
+    "\n" +
+    "page prev_w2\n" +
+    "  form W2\n" +
+    "  prevcopy\n" +
+    "  goto edit_w2\n" +
+    "\n" +
+    "page new_w2\n" +
+    "  form W2\n" +
+    "  newcopy\n" +
+    "  goto edit_w2\n";
+  var model = Parse(str);
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  EXPECT_SUBSTR(form.innerHTML, "Form: W2[0]");
+  EXPECT_SUBSTR(form.innerHTML, "Page: edit_w2");
+  var inputs = document.getElementsByTagName('input');
+  EXPECT_EQ(inputs[0].name, "employer");
+  inputs[0].value = "Employer 1";
+  inputs[0].onblur();
+  model.GoToPage("new_w2");
+  EXPECT_SUBSTR(form.innerHTML, "Form: W2[1]");
+  EXPECT_SUBSTR(form.innerHTML, "Page: edit_w2");
+  inputs[0].value = "Employer 2";
+  inputs[0].onblur();
+  model.GoToPage("prev_w2");
+  EXPECT_EQ(inputs[0].value, "Employer 1");
+  model.GoToPage("prev_w2");
+  EXPECT_EQ(inputs[0].value, "Employer 1");
+  model.GoToPage("next_w2");
+  EXPECT_EQ(inputs[0].value, "Employer 2");
+  model.GoToPage("next_w2");
+  EXPECT_EQ(inputs[0].value, "Employer 2");
+  // For manual testing, don't remove the form element.
+  form.remove();
 }
 function TestAll() {
   console.log("Testing: START");
@@ -1183,7 +1244,9 @@ function TestAll() {
   TestDeleteFirstFormLowLevel();
   TestMultipleCopiesOfFormsComplexLowLevel();
   TestBasicForms();
-  TestMultipleCopiesOfForms();
+  TestGotoKeyword();
+  TestGotoKeywordInHeader();
+  TestCreateMultipleCopiesOfForms();
   console.log("Testing: DONE");
 }
 TestAll();
