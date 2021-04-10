@@ -6,12 +6,12 @@ Forms:
 - Get values from a different form and/or copy.
 - Create a list keyword to display a list form copies.
 
-Misc GUI:
+GUI:
 - Create a goto keyword to immediately render another page.
 - Create a page footer that runs and renders on the botton of every page.
   - Put the navigation and developer buttons explicitly on the new page footer.
 
-Misc Language:
+Language:
 - Create if statements.
 - Create while loops.
 
@@ -31,3 +31,5 @@ Tutorial
 - Split the Tutorial into separate pages with small bits of the model in each page.
 - Create example applications in separate pages.
 
+Misc:
+- Move all Javascript code under the single interview object.
