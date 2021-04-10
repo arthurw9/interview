@@ -13,32 +13,40 @@ var LoadScript = function(path) {
 }
 LoadScript("interview.js").onload = function() {
   // Start only after the script is loaded.
-  var str = "form Interview\n" +
+  var str = "/* This top part of the interview runs on every page */\n" +
     "\n" +
-    "  /* This top section runs on every page */\n" +
-    "  button Home\n" +
-    "  button Tutorial\n" +
+    "form Interview\n" +
+    "\n" +
+    "button Home\n" +
+    "print \"\"\n" +
     " \n" +
-    "/* TODO: Make if statements work. */\n" +
-    "\n" +
     "page Home\n" +
     "  print \"<h1>Interview</h1>\"\n" +
     "  print \"A simple language to build interview style apps.\"\n" +
+    "  button GettingStarted\n" +
+    "  button HelloWorld\n" +
+    "  button Concepts\n" +
     "\n" +
-    "  button Tutorial\n" +
-    "\n" +
-    "page Tutorial\n" +
-    "  print \"<h1>Tutorial</h1>\"\n" +
+    "page GettingStarted\n" +
+    "  print \"<h1>Getting Started</h1>\"\n" +
     "  print \"Press the Developer button and you will\n" +
     "      see all the interview language source code that \n" +
     "      makes this site.\"\n" +
-    "  print \"From there press Run to get back to the site.\"\n" +
-    "  print \"Open a new window to see this tutorial \n" +
-    "      while you make changes. Then click Next below.\"\n" +
-    "  button Input_Some_Variables\n" +
+    "  print \"From there, press Run to start the site all\n" +
+    "      over again.\"\n" +
+    "  button GettingStarted2\n" +
     "\n" +
-    "page Tutorial2\n" +
-    "  print \"<h1>Tutorial</h1>\"\n" +
+    "page GettingStarted2\n" +
+    "  print \"<h1>Getting Started</h1>\"\n" +
+    "  print \"Things to do: Open two windows to this\n" +
+    "      website.\"\n" +
+    "  print \"That will let you see this tutorial in one\n" +
+    "      window and make changes in the other.\"\n" +
+    "  print \"Now check out the Hello World example!\"\n" +
+    "  button HelloWorld\n" +
+    "\n" +
+    "page HelloWorld\n" +
+    "  print \"<h1>Hello World</h1>\"\n" +
     "  print \"Let's make our first interview!\"\n" +
     "  print \"Press Developer and then clear all the code.\"\n" +
     "  print \"Enter the following code:\"\n" +
@@ -46,42 +54,110 @@ LoadScript("interview.js").onload = function() {
     "      <pre style=\"border: 1px solid black;\">\n" +
     "      page first\n" +
     "        print \"&lt;h1&gt;Hello World&lt;/h1&gt;\"\n" +
+    "        print \"Congrat's! You made your first\n" +
+    "            Interview\"\n" +
+    "        print \"It has one page with two print\n" +
+    "            statements. The first print statement has\n" +
+    "            some HTML!\"\n" +
     "      </pre>zz\"\n" +
     "  print \"Then press run.\"\n" +
-    "  print \"Press next to continue.\"\n" +
+    "  button Home\n" +
+    "  button Concepts\n" +
     "\n" +
-    "page Tutorial3\n" +
-    "  print \"<h1>Tutorial</h1>\"\n" +
-    "  print \"Some things to keep in mind:\"\n" +
-    "  print \"<ul>\"\n" +
-    "  print \"<li>Press developer mode to see how I wrote\n" +
-    "      this tutorial.\"\n" +
-    "  print \"<li>The print keyword takes a single argument:\n" +
-    "      Either a string literal or a variable. It can't\n" +
-    "      take an expression.\"\n" +
-    "  print z\"<li>The button keyword takes a single\n" +
-    "      argument. It's an identifier but it's value is not\n" +
-    "      evaluated. The name of the identifier must match\n" +
-    "      the name of the page. For example this is a self\n" +
-    "      link:\n" +
-    "      <pre style=\"border: 1px solid black;\">\n" +
-    "      page foo button foo\n" +
-    "      </pre>z\"\n" +
-    "  print z\"<li>Want to print quotes without\n" +
-    "      ending the print statement? The interview\n" +
-    "      language has a special quote syntax. Any\n" +
-    "      unique identifier with a quote at the end\n" +
-    "      is a quote. To end the quote just use the\n" +
-    "      same identifier. For example, try this:\n" +
+    "page Concepts\n" +
+    "  print \"<h1>Concepts</h1>\"\n" +
+    "  print \"Choose a Concept.\"\n" +
+    "  print \"\"\n" +
+    "  button identifier\n" +
+    "  print \"\"\n" +
+    "  button string\n" +
+    "  print \"\"\n" +
+    "  button Print_Keyword\n" +
+    "  print \"\"\n" +
+    "  button Button_Keyword\n" +
+    "  print \"\"\n" +
+    "  button Input_Keyword\n" +
+    "  print \"\"\n" +
+    "  button Header_Formulas\n" +
+    "  print \"\"\n" +
+    "  button Form_Keyword\n" +
+    "  print \"\"\n" +
+    "  button Initialize_Some_Variables\n" +
+    "\n" +
+    "page identifier\n" +
+    "  print \"TODO: describe identifiers.\"\n" +
+    "  button Concepts\n" +
+    "\n" +
+    "page string\n" +
+    "  print \"<h1>Strings</h1>\"\n" +
+    "  print z\"A string is any list of characters or numbers\n" +
+    "      enclosed within quotes. For example: \"Hello\" is\n" +
+    "      a string.z\"\n" +
+    "  print \"Strings can be printed.\"\n" +
+    "  print \"Want to print quotes themselves?\n" +
+    "      The interview language has a special quote syntax.\n" +
+    "      Any identifier with a quote at the end is a quote.\n" +
+    "      The start and end quote must be the same.\n" +
+    "      For example, here is another string:\"\n" +
+    "  print unique\"zzz\"Hello world.zzz\".unique\"\n" +
+    "  print x\"The zzz\" in this string is the quote.x\"\n" +
+    "  print \"Just use a unique identifier and you can\n" +
+    "      easily include quotes inside strings.\"\n" +
+    "  print x\"Try it:\n" +
     "      <pre style=\"border: 1px solid black;\">\n" +
     "      page foo\n" +
-    "      print unique\"\n" +
+    "      print zzz\"\n" +
     "        Hi. We can use \"quotes\" here. We can also use\n" +
-    "        the work 'unique' here. But to end this string,\n" +
-    "        we have to put it together. Just use the same\n" +
-    "        identifier with a quote at the end.unique\"\n" +
+    "        zzz here. But if we put them together then it\n" +
+    "        becomes a quote and ends the string.\n" +
+    "        zzz\"\n" +
+    "      </pre>\n" +
+    "      x\"\n" +
+    "  button Concepts\n" +
+    "\n" +
+    "page Print_Keyword\n" +
+    "  print \"<h1>Print Keyword</h1>\"\n" +
+    "  print \"The print keyword takes a single argument:\n" +
+    "      Either a string literal or a variable. It can't\n" +
+    "      take an expression.\"\n" +
+    "  print \"Try the HelloWorld interview to see an \n" +
+    "      example.\"\n" +
+    "  button HelloWorld\n" +
+    "  print \"\"\n" +
+    "  button Concepts\n" +
+    "\n" +
+    "page Button_Keyword\n" +
+    "  print \"<h1>Button Keyword</h1>\"\n" +
+    "  print \"The button keyword takes a single\n" +
+    "      argument. It's an identifier but it's value is not\n" +
+    "      evaluated. The name of the identifier must match\n" +
+    "      the name of a page exactly with uppercase and\n" +
+    "      lowercase treated differently.\" \n" +
+    "  print \"When the user presses a button, the interview\n" +
+    "      continues on that page.\"\n" +
+    "  print z\"Here is an example to try:\n" +
+    "      <pre style=\"border: 1px solid black;\">\n" +
+    "      page a\n" +
+    "        print \"Hi! This is page a.\"\n" +
+    "        button a\n" +
+    "        button b\n" +
+    "        button c\n" +
+    "      page b\n" +
+    "        print \"Hi! This is page b.\"\n" +
+    "        button a\n" +
+    "        button b\n" +
+    "        button c\n" +
+    "      page c\n" +
+    "        print \"Hi! This is page c.\"\n" +
+    "        button a\n" +
+    "        button b\n" +
+    "        button c\n" +
     "      </pre>z\"\n" +
-    "  print z\"<li>input takes an identifier as a single\n" +
+    "  button Concepts\n" +
+    "\n" +
+    "page Input_Keyword\n" +
+    "  print \"<h1>Input Keyword</h1>\"\n" +
+    "  print z\"input takes an identifier as a single\n" +
     "      argument.  It lets the user enter values. The\n" +
     "      value is updated only after the user leaves the\n" +
     "      input field. But the page is not reloaded\n" +
@@ -106,19 +182,30 @@ LoadScript("interview.js").onload = function() {
     "        print \"\"\n" +
     "        button refresh\n" +
     "    </pre>z\"\n" +
-    "  print \"<li>The top part of the code, before any page\n" +
-    "     keywords, runs before every page. Put any\n" +
+    "  button Concepts\n" +
+    "\n" +
+    "page Header_Formulas\n" +
+    "  print \"<h1>Header Formulas</h1>\"\n" +
+    "  print \"The top part of the code, before any pages\n" +
+    "     runs on every page before any other code. Put any\n" +
     "     formulas there and they will run before all pages.\n" +
     "     Put visual elements there, like buttons, and they\n" +
     "     will be rendered on top of all pages.\"\n" +
-    "  print \"<li>The form keyword is a container. All data\n" +
+    "  button Concepts\n" +
+    "\n" +
+    "page Form_Keyword\n" +
+    "  print \"<h1>Form Keyword</h1>\"\n" +
+    "  print \"The form keyword is a container. All data\n" +
     "      lives in the context of a form. If you don't\n" +
     "      create a form, then any variables you set will\n" +
     "      live in the default form with empty name. The same\n" +
     "      variable can have different values in the\n" +
     "      context of different forms. For example:\"\n" +
     "  print z\"<pre style=\"border: 1px solid black;\">\n" +
-    "      button init button pg_a button pg_b button pg_c \n" +
+    "      button init\n" +
+    "      button pg_a\n" +
+    "      button pg_b\n" +
+    "      button pg_c \n" +
     "      page init\n" +
     "        form a\n" +
     "          line_1 = \"inside form a\";\n" +
@@ -133,10 +220,11 @@ LoadScript("interview.js").onload = function() {
     "      page pg_c\n" +
     "        print line_1\n" +
     "      </pre>z\"\n" +
-    "  print \"<li>If you don't specify the form, like on pg_c\n" +
+    "  print \"If you don't specify the form, like on pg_c\n" +
     "      above, then you get whatever form was last used.\"\n" +
-    "  print \"<li>What else? \"\n" +
-    "  print \"</ul>\"\n" +
+    "\n" +
+    "page more\n" +
+    "  print \"What else? \"\n" +
     "\n" +
     "page Initialize_Some_Variables\n" +
     "  num = 1;\n" +
