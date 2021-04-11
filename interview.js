@@ -124,21 +124,21 @@ interview.CheckUnique = function(item) {
 }
 
 interview.KEYWORDS = [];
-function CheckUniqueKeyword(kwd) {
+interview.CheckUniqueKeyword = function(kwd) {
   interview.CheckUnique(kwd);
   interview.KEYWORDS.push(kwd);
   return kwd;
 }
 
-var PAGE_KEYWORD = CheckUniqueKeyword("page");
-var PRINT_KEYWORD = CheckUniqueKeyword("print");
-var BUTTON_KEYWORD = CheckUniqueKeyword("button");
-var INPUT_KEYWORD = CheckUniqueKeyword("input");
-var GOTO_KEYWORD = CheckUniqueKeyword("goto");
-var FORM_KEYWORD = CheckUniqueKeyword("form");
-var NEWCOPY_KEYWORD = CheckUniqueKeyword("newcopy");
-var NEXTCOPY_KEYWORD = CheckUniqueKeyword("nextcopy");
-var PREVCOPY_KEYWORD = CheckUniqueKeyword("prevcopy");
+var PAGE_KEYWORD = interview.CheckUniqueKeyword("page");
+var PRINT_KEYWORD = interview.CheckUniqueKeyword("print");
+var BUTTON_KEYWORD = interview.CheckUniqueKeyword("button");
+var INPUT_KEYWORD = interview.CheckUniqueKeyword("input");
+var GOTO_KEYWORD = interview.CheckUniqueKeyword("goto");
+var FORM_KEYWORD = interview.CheckUniqueKeyword("form");
+var NEWCOPY_KEYWORD = interview.CheckUniqueKeyword("newcopy");
+var NEXTCOPY_KEYWORD = interview.CheckUniqueKeyword("nextcopy");
+var PREVCOPY_KEYWORD = interview.CheckUniqueKeyword("prevcopy");
 
 var WHITE_SPACE_TOKEN = interview.CheckUnique("ws");
 var IDENTIFIER_TOKEN = interview.CheckUnique("id");
