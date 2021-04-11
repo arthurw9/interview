@@ -94,7 +94,7 @@ interview.IncrementFormIdx = function(model, amount) {
   var new_idx = form_idx + amount;
   interview.SetFormIdx(model, new_idx);
 }
-function ParseError(msg, token, model) {
+interview.ParseError = function(msg, token, model) {
   var idx = token[1];
   var text = model.text;
   throw "ERROR: " + msg +
@@ -102,15 +102,15 @@ function ParseError(msg, token, model) {
         "\n" + text.substr(0, idx + 1) + "/* Here */" +
         text.substr(idx + 1);
 }
-function ParseErrorPriorToken(msg, model) {
+interview.ParseErrorPriorToken = function(msg, model) {
   var idx = model.token_idx - 1;
   if (idx < 0 || idx >= model.tokens.length) {
     idx = 0;
   }
   if (idx < model.tokens.length) {
-    ParseError(msg, model.tokens[idx], model);
+    interview.ParseError(msg, model.tokens[idx], model);
   } else {
-    ParseError(msg, [0,0,0], model);
+    interview.ParseError(msg, [0,0,0], model);
   }
 }
 
@@ -198,7 +198,7 @@ function Tokenize(model) {
         // Find the next occurance of the delimiter.
         idx = text.indexOf(delim, idx);
         if (idx < 0) {
-          ParseError("Closing delimiter expected: [" + delim + "]",
+          interview.ParseError("Closing delimiter expected: [" + delim + "]",
                      token, model)
         }
         // skip past the end delimiter
@@ -237,7 +237,7 @@ function Tokenize(model) {
           if (num_dots >= 2) {
             var token = [];
             token[1] = idx;
-            ParseError("Unexpected second dot in number.", token, model);
+            interview.ParseError("Unexpected second dot in number.", token, model);
           }
         }
         ++idx;
@@ -342,7 +342,7 @@ function HandleNewNode(model, curr, new_node) {
     if ([FORM_KEYWORD, PAGE_KEYWORD, PRINT_KEYWORD,
          BUTTON_KEYWORD, INPUT_KEYWORD, GOTO_KEYWORD].includes(new_node.type)) {
       if (GOTO_KEYWORD == new_node.type && Object.keys(model.pages).length == 0) {
-        ParseError("Cannot use the goto keyword in the model header.",
+        interview.ParseError("Cannot use the goto keyword in the model header.",
                    new_node.token, model);
       }
       AppendBelowRight(curr, new_node);
@@ -362,7 +362,7 @@ function HandleNewNode(model, curr, new_node) {
         var prev_page = model.current_page;
         model.current_page = String(new_node.right);
         if (model.pages.hasOwnProperty(model.current_page)) {
-          ParseError("There is already a page named " + model.current_page,
+          interview.ParseError("There is already a page named " + model.current_page,
                      new_node.token, model);
         }
         var page_info = {};
@@ -375,7 +375,7 @@ function HandleNewNode(model, curr, new_node) {
       }
       return new_node;
     }
-    ParseError("Expected Identifier after " + curr.type + ". Found " +
+    interview.ParseError("Expected Identifier after " + curr.type + ". Found " +
                    new_node.type + " instead.",
                model.tokens[model.first_token_idx],
                model);
@@ -386,7 +386,7 @@ function HandleNewNode(model, curr, new_node) {
       model.expression_end = true;
       return new_node;
     }
-    ParseError("Expected String or identifier after print.",
+    interview.ParseError("Expected String or identifier after print.",
                model.tokens[model.first_token_idx],
                model);
   }
@@ -448,13 +448,13 @@ function HandleNewNode(model, curr, new_node) {
     AppendBelowRight(curr, new_node);
     return new_node;
   }
-  ParseError("Can't add " + new_node.type + " after " + curr.type,
+  interview.ParseError("Can't add " + new_node.type + " after " + curr.type,
              new_node.token, model);
   return new_node;
 }
 function ValidateExpression(model, expr) {
   if (expr == undefined) {
-    ParseErrorPriorToken("Unexpected empty expression.", model);
+    interview.ParseErrorPriorToken("Unexpected empty expression.", model);
   }
   // TODO: Should we check that left and right are empty?
   if ([NEWCOPY_KEYWORD, NEXTCOPY_KEYWORD, PREVCOPY_KEYWORD].includes(expr.type)) {
@@ -467,14 +467,14 @@ function ValidateExpression(model, expr) {
     if (expr.right != undefined && expr.right.type == IDENTIFIER_TOKEN) {
       return;
     }
-    ParseErrorPriorToken("Expected identifier after " + expr.type, model);
+    interview.ParseErrorPriorToken("Expected identifier after " + expr.type, model);
   }
   if ([PRINT_KEYWORD].includes(expr.type)) {
     if (expr.right != undefined &&
         [STRING_TOKEN, IDENTIFIER_TOKEN].includes(expr.right.type)) {
       return;
     }
-    ParseErrorPriorToken("Expected string or identifier after print.", model);
+    interview.ParseErrorPriorToken("Expected string or identifier after print.", model);
   }
   if (expr.type == NUMBER_TOKEN) {
     // TODO: should we check if expr.right is a number?
@@ -486,11 +486,11 @@ function ValidateExpression(model, expr) {
   }
   if (["+", "-", "*", "/", "="].includes(expr.type)) {
     if (expr.left == undefined) {
-      ParseError("Unexpected missing left operand.", expr.token, model);
+      interview.ParseError("Unexpected missing left operand.", expr.token, model);
     }
     ValidateExpression(model, expr.left);
     if (expr.right == undefined) {
-      ParseError("Unexpected missing right operand.", expr.token, model);
+      interview.ParseError("Unexpected missing right operand.", expr.token, model);
     }
     ValidateExpression(model, expr.right);
     return;
@@ -500,13 +500,13 @@ function ValidateExpression(model, expr) {
     return;
   }
   if (expr.type == "(") {
-    ParseError("Unmatched parentheses.", expr.token, model);
+    interview.ParseError("Unmatched parentheses.", expr.token, model);
   }
   if (expr.type == IDENTIFIER_TOKEN) {
     // TODO: should we check anything here?
     return;
   }
-  ParseError("Unexpected token during Parsing. ", expr.token, model);
+  interview.ParseError("Unexpected token during Parsing. ", expr.token, model);
 }
 function ParseExpression(model) {
   var start = {};
@@ -621,7 +621,7 @@ function Evaluate(model, expr) {
     interview.IncrementFormIdx(model, -1);
     return "";
   }
-  ParseError("Unexpected token during Evaluation.", expr.token, model);
+  interview.ParseError("Unexpected token during Evaluation.", expr.token, model);
 }
 function RenderExpression(model, expr) {
   if (expr.type == PRINT_KEYWORD) {
@@ -709,7 +709,7 @@ function RenderModel(model, html_form) {
   // GoToPage is used by the button keyword.
   model.GoToPage = function(page) {
     if (!model.pages.hasOwnProperty(page)) {
-      ParseErrorPriorToken("No such page found: " + page +
+      interview.ParseErrorPriorToken("No such page found: " + page +
                            ". Check capitalization?", model); 
     }
     model.current_page = page;
