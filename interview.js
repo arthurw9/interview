@@ -114,19 +114,19 @@ interview.ParseErrorPriorToken = function(msg, model) {
   }
 }
 
-var unique = {};
-function CheckUnique(item) {
-  if (unique.hasOwnProperty(item)) {
+interview.unique = {};
+interview.CheckUnique = function(item) {
+  if (interview.unique.hasOwnProperty(item)) {
     throw "ERROR: duplicate internal term: [" + item + "]";
   }
-  unique[item] = 1;
+  interview.unique[item] = 1;
   return item;
 }
 
-var KEYWORDS = [];
+interview.KEYWORDS = [];
 function CheckUniqueKeyword(kwd) {
-  CheckUnique(kwd);
-  KEYWORDS.push(kwd);
+  interview.CheckUnique(kwd);
+  interview.KEYWORDS.push(kwd);
   return kwd;
 }
 
@@ -140,16 +140,16 @@ var NEWCOPY_KEYWORD = CheckUniqueKeyword("newcopy");
 var NEXTCOPY_KEYWORD = CheckUniqueKeyword("nextcopy");
 var PREVCOPY_KEYWORD = CheckUniqueKeyword("prevcopy");
 
-var WHITE_SPACE_TOKEN = CheckUnique("ws");
-var IDENTIFIER_TOKEN = CheckUnique("id");
-var COMMENT_TOKEN = CheckUnique("cmt");
-var DIGITS_TOKEN = CheckUnique("dgt");
-var STRING_TOKEN = CheckUnique("str");
-var NUMBER_TOKEN = CheckUnique("num");
-var SEMICOLON_TOKEN = CheckUnique(";");
+var WHITE_SPACE_TOKEN = interview.CheckUnique("ws");
+var IDENTIFIER_TOKEN = interview.CheckUnique("id");
+var COMMENT_TOKEN = interview.CheckUnique("cmt");
+var DIGITS_TOKEN = interview.CheckUnique("dgt");
+var STRING_TOKEN = interview.CheckUnique("str");
+var NUMBER_TOKEN = interview.CheckUnique("num");
+var SEMICOLON_TOKEN = interview.CheckUnique(";");
 // Other types of tokens have exactly 1 character
 
-var START = CheckUnique("_start");
+var START = interview.CheckUnique("_start");
 
 function Tokenize(model) {
   var WHITE_SPACE = /\s/;
@@ -206,7 +206,7 @@ function Tokenize(model) {
       }
       token[2] = idx - token[1];
       var token_str = text.substr(token[1], token[2]).toLowerCase();
-      if (KEYWORDS.find(kwd => kwd == token_str)) {
+      if (interview.KEYWORDS.find(kwd => kwd == token_str)) {
         token[0] = token_str;
       }
       tokens.push(token);
