@@ -666,6 +666,7 @@ function RandomIdentifier(prefix) {
 }
 function RenderModel(model, html_form) {
   window.model = model;
+  model.html_form = html_form;
   gtag('event', 'screen_view', {
     'screen_name' : model.current_page
   });
@@ -712,7 +713,7 @@ function RenderModel(model, html_form) {
                            ". Check capitalization?", model); 
     }
     model.current_page = page;
-    RenderModel(model, html_form);
+    RenderModel(model, model.html_form);
   }
   // Render the navigation buttons.
   str += "<p>";
@@ -720,7 +721,7 @@ function RenderModel(model, html_form) {
     var prev_page = page_info.prev_page;
     model.RenderPrevPage = function() {
       model.current_page = prev_page;
-      RenderModel(model, html_form);
+      RenderModel(model, model.html_form);
     }
     str += "<button type='button' onclick='model.RenderPrevPage();'>Prev</button>";
   } else {
@@ -731,7 +732,7 @@ function RenderModel(model, html_form) {
     var next_page = page_info.next_page;
     model.RenderNextPage = function() {
       model.current_page = next_page;
-      RenderModel(model, html_form);
+      RenderModel(model, model.html_form);
     }
     str += "<button type='button' onclick='model.RenderNextPage();'>Next</button>";
   } else {
@@ -754,6 +755,7 @@ function RenderModel(model, html_form) {
         'screen_name' : 'Reload'
       });
       var text=document.getElementById(dev_mode_textbox).value;
+      var html_form = model.html_form;
       var model = Parse(text);
       RenderModel(model, html_form);
     }
@@ -802,20 +804,15 @@ function RenderModel(model, html_form) {
     str += "</textarea><br>";
     str += "<button type='button' onclick='model.Reload(model)'>Run</button>";
     str += "<button type='button' onclick='model.ToJavaScript()'>To JS</button>";
-    html_form.innerHTML = str;
+    model.html_form.innerHTML = str;
     var textbox = document.getElementById(dev_mode_textbox);
     textbox.value = model.text;
-    // Make sure we can manually click run
   }
   str += "<button type='button' onclick='model.DeveloperMode();'>Developer</button>";
   str += "</p>";
-  html_form.innerHTML = str;
   var form_idx = "[" + interview.GetFormIdx(model) + "]";
-  if (interview.GetNumFormCopies(model) == 0) {
-    form_idx = "";
-  }
   str += "<p>Form: " + model.curr_form + form_idx + " Page: " + model.current_page + "</p>"
-  html_form.innerHTML = str;
+  model.html_form.innerHTML = str;
   while (true) {
     if (!model.InitializerList || model.InitializerList.length == 0) {
       break;
