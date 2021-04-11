@@ -61,28 +61,44 @@ LoadScript("interview.js").onload = function() {
     "            some HTML!\"\n" +
     "      </pre>zz\"\n" +
     "  print \"Then press run.\"\n" +
-    "  button Home\n" +
     "  button Concepts\n" +
     "\n" +
     "page Concepts\n" +
     "  print \"<h1>Concepts</h1>\"\n" +
-    "  print \"Choose a Concept.\"\n" +
-    "  print \"\"\n" +
-    "  button identifier\n" +
-    "  print \"\"\n" +
-    "  button string\n" +
+    "  button Page_Keyword\n" +
     "  print \"\"\n" +
     "  button Print_Keyword\n" +
     "  print \"\"\n" +
     "  button Button_Keyword\n" +
     "  print \"\"\n" +
+    "  button Initialize_Some_Variables\n" +
+    "  print \"\"\n" +
     "  button Input_Keyword\n" +
+    "  print \"\"\n" +
+    "  button identifier\n" +
+    "  print \"\"\n" +
+    "  button string\n" +
     "  print \"\"\n" +
     "  button Header_Formulas\n" +
     "  print \"\"\n" +
     "  button Form_Keyword\n" +
     "  print \"\"\n" +
-    "  button Initialize_Some_Variables\n" +
+    "  button Form_Copies\n" +
+    "\n" +
+    "page Page_Keyword\n" +
+    "  print \"<h1>Page Keyword</h1>\"\n" +
+    "  print \"An interview app is divided into pages. \n" +
+    "      One page is visible at a time. Each page must have\n" +
+    "      a unique name.\"\n" +
+    "  print x\"Try it:\n" +
+    "      <pre style=\"border: 1px solid black;\">\n" +
+    "      page a\n" +
+    "      page b\n" +
+    "      page c\n" +
+    "      </pre>x\"\n" +
+    "  print \"This creates three empty pages.\"\n" +
+    "  print \"Use the next and prev buttons to switch between pages.\"\n" +
+    "  button Concepts\n" +
     "\n" +
     "page identifier\n" +
     "  print \"TODO: describe identifiers.\"\n" +
@@ -186,11 +202,19 @@ LoadScript("interview.js").onload = function() {
     "\n" +
     "page Header_Formulas\n" +
     "  print \"<h1>Header Formulas</h1>\"\n" +
-    "  print \"The top part of the code, before any pages\n" +
-    "     runs on every page before any other code. Put any\n" +
-    "     formulas there and they will run before all pages.\n" +
-    "     Put visual elements there, like buttons, and they\n" +
-    "     will be rendered on top of all pages.\"\n" +
+    "  print \"The top part of the code, before any page\n" +
+    "     statements, has the header formulas. This section runs\n" +
+    "     on every page before any other code. You can put\n" +
+    "     formulas there and also visual elements like buttons\n" +
+    "     or print statements. These will display on top of\n" +
+    "     every page.\"\n" +
+    "  print \"It's good practice to put all formulas into this\n" +
+    "     header section. This is because putting formulas on the\n" +
+    "     different pages can be repetitive and error prone.\n" +
+    "     It's easy to accidentally miss putting an important\n" +
+    "     formula on some pages. Putting all assignments in the\n" +
+    "     header simplifies this issue. The formulas always run\n" +
+    "     before each page so they are always up to date.\"\n" +
     "  button Concepts\n" +
     "\n" +
     "page Form_Keyword\n" +
@@ -222,9 +246,56 @@ LoadScript("interview.js").onload = function() {
     "      </pre>z\"\n" +
     "  print \"If you don't specify the form, like on pg_c\n" +
     "      above, then you get whatever form was last used.\"\n" +
+    "  button Concepts\n" +
     "\n" +
-    "page more\n" +
-    "  print \"What else? \"\n" +
+    "page Form_Copies\n" +
+    "  print \"<h1>Form Copies</h1>\"\n" +
+    "  print \"Each form can have one or more copies with\n" +
+    "      different data.\"\n" +
+    "  print \"For example a single US 1040 tax form may have\n" +
+    "      multiple W2 forms associated with it. We call these\n" +
+    "      form copies.\"\n" +
+    "  print \"The form keyword automatically creates a first\n" +
+    "      form copy and makes it the current copy.\"\n" +
+    "  print \"Every form has a current copy.\"\n" +
+    "  print \"The newcopy keyword is used to make another\n" +
+    "      copy.\"\n" +
+    "  print \"The new form copy starts empty with no data and\n" +
+    "      becomes the current copy.\"\n" +
+    "  print \"The current copy can be changed with the nextcopy\n" +
+    "      and prevcopy keywords.\"\n" +
+    "  print \"Note prevcopy and nextcopy will stop at the first\n" +
+    "      and last form copies. You need to use newcopy to\n" +
+    "      make a new copy.\"\n" +
+    "  print z\"Try it:\n" +
+    "      <pre style=\"border: 1px solid black;\">\n" +
+    "      form US1040\n" +
+    "      \n" +
+    "      page edit_w2\n" +
+    "      form W2\n" +
+    "      print \"Employer\"\n" +
+    "      input employer\n" +
+    "      print \"\"\n" +
+    "      button prev_w2\n" +
+    "      button next_w2\n" +
+    "      print \"\"\n" +
+    "      button new_w2\n" +
+    "      \n" +
+    "      page next_w2\n" +
+    "      form W2\n" +
+    "      nextcopy\n" +
+    "      goto edit_w2\n" +
+    "      \n" +
+    "      page prev_w2\n" +
+    "      form W2\n" +
+    "      prevcopy\n" +
+    "      goto edit_w2\n" +
+    "      \n" +
+    "      page new_w2\n" +
+    "      form W2\n" +
+    "      newcopy\n" +
+    "      goto edit_w2\n" +
+    "      </pre>z\"\n" +
     "\n" +
     "page Initialize_Some_Variables\n" +
     "  num = 1;\n" +
