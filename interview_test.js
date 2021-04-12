@@ -22,13 +22,13 @@ function EXPECT_NOT_SUBSTR(haystack, needle) {
 function TokenizeForTest(str) {
   var model = {};
   model.text = str;
-  Tokenize(model);
+  interview.Tokenize(model);
   return model.tokens;
 }
 function TestTokenizeNumbers() {
   var model = {};
   model.text = "1020339";
-  Tokenize(model);
+  interview.Tokenize(model);
   var tokens = model.tokens;
   EXPECT_EQ(tokens.length, 1);
   EXPECT_EQ(tokens[0][0], interview.NUMBER_TOKEN);
@@ -37,7 +37,7 @@ function TestTokenizeNumbers() {
 
   model = {};
   model.text = "1020.339";
-  Tokenize(model);
+  interview.Tokenize(model);
   tokens = model.tokens;
   EXPECT_EQ(tokens.length, 1);
   EXPECT_EQ(tokens[0][0], interview.NUMBER_TOKEN);
@@ -47,7 +47,7 @@ function TestTokenizeNumbers() {
   try {
     model = {};
     model.text = "1020.33.9";
-    Tokenize(model);
+    interview.Tokenize(model);
     tokens = model.tokens;
     FAIL("Should throw an error because of extra  dot");
   } catch(err) {
@@ -59,7 +59,7 @@ function TestTokenizeNumbers() {
 
   model = {};
   model.text = "1020.33a";
-  Tokenize(model);
+  interview.Tokenize(model);
   tokens = model.tokens;
   EXPECT_EQ(tokens.length, 2);
   EXPECT_EQ(tokens[0][0], interview.NUMBER_TOKEN);
@@ -249,7 +249,7 @@ function TestCleanTokens() {
   var text = "  x /* hi */ = y 100.0 \" \" ;";
   var model = {};
   model.text = text;
-  Tokenize(model);
+  interview.Tokenize(model);
   EXPECT_EQ(model.tokens.length, 14);
   CleanTokens(model);
   var tokens = model.tokens;

@@ -150,7 +150,7 @@ interview.SEMICOLON_TOKEN = interview.CheckUnique(";");
 
 interview.START = interview.CheckUnique("_start");
 
-function Tokenize(model) {
+interview.Tokenize = function(model) {
   var WHITE_SPACE = /\s/;
   var COMMENT_START = "/*";
   var COMMENT_END = "*/";
@@ -848,7 +848,7 @@ function FindFirstPage(model) {
 }
 function Parse(text) {
   var model = GetEmptyModel(text);
-  Tokenize(model);
+  interview.Tokenize(model);
   CleanTokens(model);
   while (model.token_idx < model.tokens.length) {
     model.first_token_idx = model.token_idx;
