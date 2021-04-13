@@ -719,6 +719,23 @@ interview.Reload = function(model) {
   var model = Parse(text);
   RenderModel(model, html_form);
 }
+interview.SaveState = function(model) {
+  gtag('event', 'screen_view', {
+    'screen_name' : 'SaveState'
+  });
+  // Should only be used in developer mode.
+  if (model.dev_mode_textbox == null) {
+    return;
+  }
+  var save_time = new Date();
+  var save_page_name = ["Restore_From", save_time.getFullYear(),
+      (1 + save_time.getMonth()), save_time.getDate(), "At",
+      save_time.getHours(), save_time.getMinutes(),
+      save_time.getSeconds()].join("_");
+  var original_text = model.text;
+  alert(save_page_name);
+  alert(model.text);
+}
 interview.ToJavaScript = function(model) {
   gtag('event', 'screen_view', {
     'screen_name' : 'ToJs'
@@ -773,6 +790,7 @@ interview.DeveloperMode = function(model) {
   var str = "<textarea id=" + dev_mode_textbox + " style='width: 475px; height: 360px'>"
   str += "</textarea><br>";
   str += "<button type='button' onclick='interview.Reload(model)'>Run</button>";
+  str += "<button type='button' onclick='interview.SaveState(model)'>Save State</button>";
   str += "<button type='button' onclick='interview.ToJavaScript(model)'>To JS</button>";
   model.html_form.innerHTML = str;
   var textbox = document.getElementById(dev_mode_textbox);
