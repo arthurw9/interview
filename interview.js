@@ -643,7 +643,7 @@ function RenderExpression(model, expr) {
       }
     }
     var identifier_name = expr.right.right;
-    var id = RandomIdentifier(identifier_name);
+    var id = interview.RandomIdentifier(identifier_name);
     var str = "<input type=\"text\" name=\"" + identifier_name + 
         "\" size=\"20\" id=" + id + " onblur=\"model.Read(this);\">";
     // TODO: Need to verify:
@@ -660,8 +660,84 @@ function RenderExpression(model, expr) {
   Evaluate(model, expr);
   return "";
 }
-function RandomIdentifier(prefix) {
+interview.RandomIdentifier = function(prefix) {
   return prefix + String(Math.random()).substr(2);
+}
+interview.Reload = function(model) {
+  gtag('event', 'screen_view', {
+    'screen_name' : 'Reload'
+  });
+  // Should only be used to restart the model from developer mode.
+  if (model.dev_mode_textbox == null) {
+    return;
+  }
+  if (model.js_str_element != null) {
+    var pre = document.getElementById(model.js_str_element);
+    pre.remove();
+  }
+  var text=document.getElementById(model.dev_mode_textbox).value;
+  var html_form = model.html_form;
+  var model = Parse(text);
+  RenderModel(model, html_form);
+}
+interview.ToJavaScript = function(model) {
+  gtag('event', 'screen_view', {
+    'screen_name' : 'ToJs'
+  });
+  // Should only be used to get Javascript from the model in developer mode.
+  if (model.dev_mode_textbox == null) {
+    return;
+  }
+  var text=document.getElementById(model.dev_mode_textbox).value;
+  var jsStr = "  var str = ";
+  var lines = text.split("\n");
+  var n = lines.length;
+  while (lines[n-1] == "") {
+    --n;
+  }
+  var i = 0;
+  var indent = "";
+  while (i < n) {
+    var line = lines[i];
+    line = line.split("\"").join("\\\"");
+    if (i != 0) {
+      jsStr += " +\n";
+    }
+    jsStr += indent + "\"" + line + "\\n\"";
+    indent = "    ";
+    i++;
+  }
+  jsStr += ";\n";
+  navigator.clipboard.writeText(jsStr).then(
+    function() {
+      alert("Copied to clipboard.");
+    }, function() {
+      alert("Failed to copy to clipboard. See below for text.");
+    });
+  if (model.js_str_element == null) {
+    model.js_str_element = interview.RandomIdentifier("js_str_");
+    var pre = document.createElement("pre");
+    pre.id = model.js_str_element;
+    pre.innerText = jsStr;
+    document.body.appendChild(pre);
+  } else {
+    var pre = document.getElementById(model.js_str_element);
+    pre.innerText = jsStr;
+  }
+}
+interview.DeveloperMode = function(model) {
+  gtag('event', 'screen_view', {
+     'screen_name' : 'DeveloperMode'
+  });
+  var dev_mode_textbox = interview.RandomIdentifier("model_def_");
+  model.dev_mode_textbox = dev_mode_textbox;
+  var str = "<textarea id=" + dev_mode_textbox + " style='width: 475px; height: 360px'>"
+  str += "</textarea><br>";
+  str += "<button type='button' onclick='interview.Reload(model)'>Run</button>";
+  str += "<button type='button' onclick='interview.ToJavaScript(model)'>To JS</button>";
+  model.html_form.innerHTML = str;
+  var textbox = document.getElementById(dev_mode_textbox);
+  textbox.value = model.text;
 }
 function RenderModel(model, html_form) {
   window.model = model;
@@ -738,76 +814,7 @@ function RenderModel(model, html_form) {
     delete model.RenderNextPage;
     str += "<button type='button' disabled>Next</button>";
   }
-  // Render the Developer Mode button
-  model.DeveloperMode = function() {
-    var dev_mode_textbox = RandomIdentifier("model_def_");
-    model.dev_mode_textbox = dev_mode_textbox;
-    gtag('event', 'screen_view', {
-       'screen_name' : 'DeveloperMode'
-    });
-    model.Reload = function(model) {
-      if (model.js_str_element != null) {
-        var pre = document.getElementById(model.js_str_element);
-        pre.remove();
-      }
-      gtag('event', 'screen_view', {
-        'screen_name' : 'Reload'
-      });
-      var text=document.getElementById(dev_mode_textbox).value;
-      var html_form = model.html_form;
-      var model = Parse(text);
-      RenderModel(model, html_form);
-    }
-    model.ToJavaScript = function() {
-      gtag('event', 'screen_view', {
-        'screen_name' : 'ToJs'
-      });
-      var text=document.getElementById(dev_mode_textbox).value;
-      var jsStr = "  var str = ";
-      var lines = text.split("\n");
-      var n = lines.length;
-      while (lines[n-1] == "") {
-        --n;
-      }
-      var i = 0;
-      var indent = "";
-      while (i < n) {
-        var line = lines[i];
-        line = line.split("\"").join("\\\"");
-        if (i != 0) {
-          jsStr += " +\n";
-        }
-        jsStr += indent + "\"" + line + "\\n\"";
-        indent = "    ";
-        i++;
-      }
-      jsStr += ";\n";
-      navigator.clipboard.writeText(jsStr).then(
-        function() {
-          alert("Copied to clipboard.");
-        }, function() {
-          alert("Failed to copy to clipboard. See below for text.");
-        });
-      if (model.js_str_element == null) {
-        model.js_str_element = RandomIdentifier("js_str_");
-        var pre = document.createElement("pre");
-        pre.id = model.js_str_element;
-        pre.innerText = jsStr;
-        document.body.appendChild(pre);
-      } else {
-        var pre = document.getElementById(model.js_str_element);
-        pre.innerText = jsStr;
-      }
-    }
-    var str = "<textarea id=" + dev_mode_textbox + " style='width: 475px; height: 360px'>"
-    str += "</textarea><br>";
-    str += "<button type='button' onclick='model.Reload(model)'>Run</button>";
-    str += "<button type='button' onclick='model.ToJavaScript()'>To JS</button>";
-    model.html_form.innerHTML = str;
-    var textbox = document.getElementById(dev_mode_textbox);
-    textbox.value = model.text;
-  }
-  str += "<button type='button' onclick='model.DeveloperMode();'>Developer</button>";
+  str += "<button type='button' onclick='interview.DeveloperMode(model);'>Developer</button>";
   str += "</p>";
   var form_idx = "[" + interview.GetFormIdx(model) + "]";
   str += "<p>Form: " + model.curr_form + form_idx + " Page: " + model.current_page + "</p>"

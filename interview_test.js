@@ -682,13 +682,12 @@ function TestDeveloperMode() {
   EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), false);
   EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), false);
   EXPECT_EQ(model.hasOwnProperty("Reload"), false);
-  model.DeveloperMode();
-  EXPECT_EQ(model.hasOwnProperty("Reload"), true);
+  interview.DeveloperMode(model);
   var text = model.dev_mode_textbox;
   EXPECT_SUBSTR(text, "model_def_");
   // Write a new model dynamically
   document.getElementById(text).value = "page a page b page c";
-  model.Reload(model);
+  interview.Reload(model);
   // The old model is dead. Long live the new model.
   model = window.model;
   EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), false);
