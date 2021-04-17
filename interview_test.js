@@ -687,9 +687,8 @@ function TestDeveloperMode() {
   EXPECT_SUBSTR(text, "model_def_");
   // Write a new model dynamically
   document.getElementById(text).value = "page a page b page c";
-  interview.Reload(model);
+  model = interview.Reload(model);
   // The old model is dead. Long live the new model.
-  model = window.model;
   EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), false);
   EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), true);
   EXPECT_EQ(model.current_page, "a");
@@ -1221,6 +1220,88 @@ function TestCreateMultipleCopiesOfForms() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
+function TestZeroPrefix() {
+  EXPECT_EQ(interview.ZeroPrefix(3), "03");
+  EXPECT_EQ(interview.ZeroPrefix(3, 1), "3");
+  EXPECT_EQ(interview.ZeroPrefix(3, 2), "03");
+  EXPECT_EQ(interview.ZeroPrefix(3, 3), "003");
+}
+function TestGetSavePageName() {
+  var dt = new Date('December 17, 1995 03:24:00');
+  var page_name = interview.GetSavePageName(dt);
+  EXPECT_EQ(page_name, "Restore_from_1995_12_17_at_03_24_00");
+}
+function TestFindFirstPage() {
+  var model = Parse(
+      "form page_foo " +
+      "form page_bar " +
+      "/* page you_found_a_comment */ " +
+      "print \" page you_found_a_print \" " +
+      "z = \" page you_found_an_expression \"; " +
+      "\" page you_found_a_string \"; " +
+      "page start " +
+      "print zzzz\"You found me!zzzz\" " +
+      "page page2 " +
+      "print zzzz\"meh.zzzz\" "
+  );
+  EXPECT_EQ(interview.FindFirstPage(model), "start");
+}
+function TestGetTextIndexOfPage() {
+  var model = Parse(
+      "form page_foo " +
+      "form page_bar " +
+      "/* page you_found_a_comment */ " +
+      "print \" page you_found_a_print \" " +
+      "z = \" page you_found_an_expression \"; " +
+      "\" page you_found_a_string \"; " +
+      "page start " +
+      "\"You found me!zzzz\";" +
+      "page page2 " +
+      "\"meh.zzzz\";"
+  );
+  EXPECT_EQ(Object.keys(model.pages).length, 2);
+  var idx = interview.GetTextIndexOfPage(model, "start");
+  EXPECT_EQ(idx, 159);
+  EXPECT_EQ(model.text.substr(idx, 21), "page start \"You found");
+  idx = interview.GetTextIndexOfPage(model, "page2");
+  EXPECT_EQ(idx, 190);
+  EXPECT_EQ(model.text.substr(idx, 16), "page page2 \"meh.");
+  idx = interview.GetTextIndexOfPage(model, "not_a_real_page");
+  EXPECT_EQ(idx, model.text.length);
+  EXPECT_EQ(idx, 212);
+  idx = interview.GetTextIndexOfPage(model, undefined);
+  EXPECT_EQ(idx, model.text.length);
+  EXPECT_EQ(idx, 212);
+  idx = interview.GetTextIndexOfPage(model, null);
+  EXPECT_EQ(idx, model.text.length);
+  EXPECT_EQ(idx, 212);
+}
+function TestSaveState() {
+  var model = Parse("page start form foo x = 7;");
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  interview.DeveloperMode(model);
+  // hack to make the test reproducible
+  model.dev_mode_start_time = new Date("2021-04-17T13:51:03");
+  interview.SaveState(model);
+  var text=document.getElementById(model.dev_mode_textbox).value;
+  var expected_model_1 = "page Restore_from_2021_04_17_at_13_51_03\n" +
+     "  /* TODO: Add code to actually restore the model */\n" +
+     "  goto start\n\n" +
+     "page start form foo x = 7;";
+  EXPECT_EQ(text, expected_model_1);
+  interview.SaveState(model);
+  interview.SaveState(model);
+  EXPECT_EQ(text, expected_model_1);
+
+  model = interview.Reload(model);
+  interview.DeveloperMode(model);
+  interview.SaveState(model);
+  interview.SaveState(model);
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
 function TestAll() {
   console.log("Testing: START");
   TestTokenizeNumbers();
@@ -1252,6 +1333,11 @@ function TestAll() {
   TestGotoKeyword();
   TestGotoKeywordInHeader();
   TestCreateMultipleCopiesOfForms();
+  TestZeroPrefix();
+  TestGetSavePageName();
+  TestFindFirstPage();
+  TestGetTextIndexOfPage();
+  TestSaveState();
   console.log("Testing: DONE");
 }
 TestAll();

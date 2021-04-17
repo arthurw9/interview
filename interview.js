@@ -718,23 +718,70 @@ interview.Reload = function(model) {
   var html_form = model.html_form;
   var model = Parse(text);
   RenderModel(model, html_form);
+  return model;
+}
+interview.ZeroPrefix = function(num, digits) {
+  if (digits == null) {
+    digits = 2;
+  }
+  num = "" + num;
+  while (num.length < digits) {
+    num = "0" + num;
+  }
+  return num;
+}
+interview.GetSavePageName = function(datetime) {
+  return [
+      "Restore_from",
+       "" + datetime.getFullYear(),
+       interview.ZeroPrefix(1 + datetime.getMonth()),
+       interview.ZeroPrefix(datetime.getDate()),
+       "at",
+       interview.ZeroPrefix(datetime.getHours()),
+       interview.ZeroPrefix(datetime.getMinutes()),
+       interview.ZeroPrefix(datetime.getSeconds())
+     ].join("_");
+}
+interview.GetTextIndexOfPage = function(model, page_name) {
+  if (!model.pages.hasOwnProperty(page_name)) {
+    return model.text.length;
+  }
+  var page_info = model.pages[page_name];
+  var start_expr_idx = page_info.start_expr_idx;
+  var start_expr_info = model.expression_list[start_expr_idx];
+  var first_token_idx = start_expr_info.first_token_idx;
+  var first_token = model.tokens[first_token_idx];
+  return first_token[1];
 }
 interview.SaveState = function(model) {
   gtag('event', 'screen_view', {
     'screen_name' : 'SaveState'
   });
-  // Should only be used in developer mode.
-  if (model.dev_mode_textbox == null) {
+  var new_code_textbox = document.getElementById(model.dev_mode_textbox);
+  var proceed = false;
+  if (model.text == new_code_textbox.value) {
+    proceed = true
+  }
+  var original_first_page = interview.FindFirstPage(model);
+  // TODO: Check if original first page is already an older restore page?
+  var save_page_name = interview.GetSavePageName(model.dev_mode_start_time);
+  var save_page = "page " + save_page_name + "\n";
+  save_page += "  /* TODO: Add code to actually restore the model */\n";
+  save_page += "  goto " + original_first_page + "\n\n";
+  var char_idx = interview.GetTextIndexOfPage(model, original_first_page);
+  var prefix = model.text.substr(0, char_idx);
+  var suffix = model.text.substr(char_idx);
+  var new_model_text = prefix + save_page + suffix;
+  if (new_code_textbox.value == new_model_text) {
+    proceed = true
+  }
+  if (!proceed) {
+    proceed = confirm("Model is modified! Your changes will be lost.");
+  }
+  if (!proceed) {
     return;
   }
-  var save_time = new Date();
-  var save_page_name = ["Restore_From", save_time.getFullYear(),
-      (1 + save_time.getMonth()), save_time.getDate(), "At",
-      save_time.getHours(), save_time.getMinutes(),
-      save_time.getSeconds()].join("_");
-  var original_text = model.text;
-  alert(save_page_name);
-  alert(model.text);
+  new_code_textbox.value = new_model_text;
 }
 interview.ToJavaScript = function(model) {
   gtag('event', 'screen_view', {
@@ -787,6 +834,8 @@ interview.DeveloperMode = function(model) {
   });
   var dev_mode_textbox = interview.RandomIdentifier("model_def_");
   model.dev_mode_textbox = dev_mode_textbox;
+  // This is needed here to make it easy for SaveState to tell if the model is modified.
+  model.dev_mode_start_time = new Date();
   var str = "<textarea id=" + dev_mode_textbox + " style='width: 475px; height: 360px'>"
   str += "</textarea><br>";
   str += "<button type='button' onclick='interview.Reload(model)'>Run</button>";
@@ -830,6 +879,10 @@ function RenderModel(model, html_form) {
     // TODO: Should we detect and prevent infinite loops?
     if (expr.type == interview.GOTO_KEYWORD) {
       model.current_page = expr.right.right;
+      if (!model.pages.hasOwnProperty(model.current_page)) {
+        interview.ParseErrorPriorToken("No such page found: " + model.current_page +
+                             ". Check capitalization?", model); 
+      }
       page_info = model.pages[model.current_page];
       // +1 to skip past the page expression itself.
       idx = page_info.start_expr_idx + 1;
@@ -902,13 +955,16 @@ function GetEmptyModel(text) {
   interview.InitForms(model);
   return model;
 }
-function FindFirstPage(model) {
-  if (model.hasOwnProperty("current_page") &&
-      model.pages.hasOwnProperty(model.current_page)) {
-    while(model.pages[model.current_page].hasOwnProperty("prev_page")) {
-      model.current_page = model.pages[model.current_page].prev_page;
-    }
+interview.FindFirstPage = function(model) {
+  if (!model.hasOwnProperty("current_page") ||
+      !model.pages.hasOwnProperty(model.current_page)) {
+    return "";
   }
+  var page = model.current_page;
+  while(model.pages[page].hasOwnProperty("prev_page")) {
+    page = model.pages[page].prev_page;
+  }
+  return page;
 }
 function Parse(text) {
   var model = GetEmptyModel(text);
@@ -926,7 +982,7 @@ function Parse(text) {
         });
   }
   // TODO: Make sure all button destination pages exist.
-  FindFirstPage(model);
+  model.current_page = interview.FindFirstPage(model);
   return model;
 }
 
