@@ -13,22 +13,33 @@ gtag('config', 'G-8KY282RL6T');
 // TODO: Move all symbols under this object.
 var interview = {};
 interview.InitForms = function(model) {
-  // Maps form name to number of copies
-  model.num_form_copies = {};
-  // Maps form name to the idx of the current copy of that form.
-  model.curr_form_idx = {};
-  // Maps form name to array of data objects.
-  // Each data object maps symbol names to values.
-  // model.form_data[form_name][form_idx][name] -> value
-  model.form_data = {};
-  interview.SetForm(model, "");
+  // model.form_info[form_name] =
+  //     {num_copies, first_id, curr_id, next_free_id}
+  model.form_info = {};
+  // model.form_copy_info[form_name][copy_id] =
+  //     {prev_id, next_id, data}
+  model.form_copy_info = {};
+  // I don't want to use the empty string for the default form
+  // because that's not an identifier. So the programmer would never
+  // be able to get back to the default form.
+  interview.SetForm(model, "scratch");
 }
 // Set the current form.
 interview.SetForm = function(model, form_name) {
-  if (!model.num_form_copies.hasOwnProperty(form_name)) {
-    model.num_form_copies[form_name] = 1;
-    model.curr_form_idx[form_name] = 0;
-    model.form_data[form_name] = [{}];
+  if (!model.form_info.hasOwnProperty(form_name)) {
+    var new_form_info = {};
+    new_form_info.num_copies = 1;
+    new_form_info.first_id = 0;
+    new_form_info.curr_id = 0;
+    new_form_info.next_free_id = 1;
+    model.form_info[form_name] = new_form_info;
+
+    var new_copy_info = {};
+    new_copy_info.prev_id = -1;
+    new_copy_info.next_id = -1;
+    new_copy_info.data = {};
+    model.form_copy_info[form_name] = {};
+    model.form_copy_info[form_name][0] = new_copy_info;
   }
   model.curr_form = form_name;
   // Keeping model.data because otherwise there would
@@ -37,62 +48,90 @@ interview.SetForm = function(model, form_name) {
 }
 interview.GetDataObj = function(model) {
   var form_name = model.curr_form;
-  var form_idx = model.curr_form_idx[form_name];
-  return model.form_data[form_name][form_idx];
+  var form_id = model.form_info[form_name].curr_id;
+  return model.form_copy_info[form_name][form_id].data;
 }
-interview.GetFormIdx = function(model) {
-  return model.curr_form_idx[model.curr_form];
+interview.GetFormId = function(model) {
+  return model.form_info[model.curr_form].curr_id;
 }
 interview.GetNumFormCopies = function(model) {
-  return model.num_form_copies[model.curr_form];
+  return model.form_info[model.curr_form].num_copies;
 }
-interview.NewFormCopy = function(model) {
+interview.AppendNewFormCopy = function(model) {
   var form_name = model.curr_form;
-  model.num_form_copies[form_name] += 1;
-  var form_idx = model.num_form_copies[form_name] - 1;
-  model.curr_form_idx[form_name] = form_idx;
-  model.form_data[form_name][form_idx] = {};
+  var form_info = model.form_info[form_name];
+  var prev_copy_id = form_info.curr_id;
+  var prev_copy_info = model.form_copy_info[form_name][prev_copy_id];
+  var new_copy_id = form_info.next_free_id;
+  form_info.next_free_id += 1;
+  form_info.num_copies += 1;
+  form_info.curr_id = new_copy_id;
+
+  var new_copy_info = {};
+  model.form_copy_info[form_name][new_copy_id] = new_copy_info;
+  new_copy_info.prev_id = prev_copy_id;
+  new_copy_info.next_id = prev_copy_info.next_id;
+  new_copy_info.data = {};
+  prev_copy_info.next_id = new_copy_id;
   model.data = interview.GetDataObj(model);
 }
 interview.DeleteFormCopy = function(model) {
   var form_name = model.curr_form;
-  var num_copies = model.num_form_copies[form_name];
-  var form_idx = model.curr_form_idx[form_name];
-  while (form_idx < num_copies - 1) {
-    model.form_data[form_name][form_idx] =
-      model.form_data[form_name][form_idx + 1];
-    form_idx += 1;
+  var form_info = model.form_info[form_name];
+  if (form_info.num_copies == 1) {
+    // TODO: Should we allow the last form copy to be deleted?
+    // TODO: Should we throw an error if the user tries?
+    return;
   }
-  // TODO: Should we allow the last form copy to be deleted?
-  if (num_copies > 1) {
-    num_copies -= 1;
-    model.num_form_copies[form_name] = num_copies;
-    model.form_data[form_name][num_copies] = null;
+  var old_copy_id = form_info.curr_id;
+  var old_copy_info = model.form_copy_info[form_name][old_copy_id];
+  form_info.curr_id = old_copy_info.next_id
+  if (form_info.curr_id == -1) {
+    form_info.curr_id = old_copy_info.prev_id
   }
-  form_idx = model.curr_form_idx[form_name];
-  if (form_idx >= num_copies) {
-    form_idx -= 1;
-    model.curr_form_idx[form_name] = form_idx;
+  if (form_info.first_id == old_copy_id) {
+    form_info.first_id = form_info.curr_id;
   }
+  form_info.num_copies -= 1;
+  if (old_copy_info.prev_id >= 0) {
+    model.form_copy_info[form_name][old_copy_info.prev_id].next_id =
+        old_copy_info.next_id;
+  }
+  if (old_copy_info.next_id >= 0) {
+    model.form_copy_info[form_name][old_copy_info.next_id].prev_id =
+        old_copy_info.prev_id;
+  }
+  delete model.form_info[form_name][old_copy_id];
   model.data = interview.GetDataObj(model);
 }
-interview.SetFormIdx = function(model, new_idx) {
+interview.SetFormId = function(model, new_id) {
   var form_name = model.curr_form;
-  var num_copies = model.num_form_copies[form_name];
-  if (new_idx < 0) {
-    new_idx = 0;
-  }
-  if (new_idx >= num_copies) {
-    new_idx = num_copies - 1;
-  }
-  model.curr_form_idx[form_name] = new_idx;
+  var form_info = model.form_info[form_name];
+  form_info.curr_id = new_id;
   model.data = interview.GetDataObj(model);
 }
-interview.IncrementFormIdx = function(model, amount) {
+interview.IncrementFormCopy = function(model, amount) {
+  // form_info[form_name] =
+  //     {num_copies, first_id, curr_id, next_free_id}
+  // form_copy_info[form_name][copy_id] =
+  //     {prev_id, next_id, data}
   var form_name = model.curr_form;
-  var form_idx = model.curr_form_idx[form_name];
-  var new_idx = form_idx + amount;
-  interview.SetFormIdx(model, new_idx);
+  var form_id = model.form_info[form_name].curr_id;
+  while(amount > 0) {
+    amount -= 1;
+    var next_id = model.form_copy_info[form_name][form_id].next_id;
+    if (next_id >= 0) {
+      form_id = next_id;
+    }
+  }
+  while(amount < 0) {
+    amount += 1;
+    var prev_id = model.form_copy_info[form_name][form_id].prev_id;
+    if (prev_id >= 0) {
+      form_id = prev_id;
+    }
+  }
+  interview.SetFormId(model, form_id);
 }
 interview.ParseError = function(msg, token, model) {
   var idx = token[1];
@@ -609,15 +648,15 @@ function Evaluate(model, expr) {
     }
   }
   if (expr.type == interview.NEWCOPY_KEYWORD) {
-    interview.NewFormCopy(model);
+    interview.AppendNewFormCopy(model);
     return "";
   }
   if (expr.type == interview.NEXTCOPY_KEYWORD) {
-    interview.IncrementFormIdx(model, 1);
+    interview.IncrementFormCopy(model, 1);
     return "";
   }
   if (expr.type == interview.PREVCOPY_KEYWORD) {
-    interview.IncrementFormIdx(model, -1);
+    interview.IncrementFormCopy(model, -1);
     return "";
   }
   interview.ParseError("Unexpected token during Evaluation.", expr.token, model);
@@ -816,7 +855,7 @@ function RenderModel(model, html_form) {
   }
   str += "<button type='button' onclick='interview.DeveloperMode(model);'>Developer</button>";
   str += "</p>";
-  var form_idx = "[" + interview.GetFormIdx(model) + "]";
+  var form_idx = "[" + interview.GetFormId(model) + "]";
   str += "<p>Form: " + model.curr_form + form_idx + " Page: " + model.current_page + "</p>"
   model.html_form.innerHTML = str;
   while (true) {
