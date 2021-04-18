@@ -850,7 +850,7 @@ interview.SaveState = function(model) {
   }
   save_page += "  form " + last_known_form + " /* last_known_form */\n";
   save_page += "  usecopy " + last_know_form_copy + " /* last_known_copy_id */\n";
-  save_page += "  goto " + last_known_page + " /* last_known_page */\n";
+  save_page += "  goto " + last_known_page + " /* last_known_page */\n\n";
   var char_idx = interview.GetTextIndexOfPage(model, original_first_page);
   var prefix = model.text.substr(0, char_idx);
   var suffix = model.text.substr(char_idx);

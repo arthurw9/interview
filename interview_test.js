@@ -1393,7 +1393,7 @@ DefineTest("TestSaveState").func = function() {
      "  x = \"hello\";\n" +
      "  form foo /* last_known_form */\n" +
      "  usecopy 1 /* last_known_copy_id */\n" +
-     "  goto p3 /* last_known_page */\n" +
+     "  goto p3 /* last_known_page */\n\n" +
      original_model;
   EXPECT_EQ(text, expected_model_1);
   interview.SaveState(model);
