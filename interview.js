@@ -51,8 +51,18 @@ interview.GetDataObj = function(model) {
   var form_id = model.form_info[form_name].curr_id;
   return model.form_copy_info[form_name][form_id].data;
 }
-interview.GetFormId = function(model) {
+interview.GetFormCopyId = function(model) {
   return model.form_info[model.curr_form].curr_id;
+}
+interview.GetNextCopyId = function(model) {
+  var form_name = model.curr_form;
+  var form_id = model.form_info[form_name].curr_id;
+  return model.form_copy_info[form_name][form_id].next_id
+}
+interview.GetPrevCopyId = function(model) {
+  var form_name = model.curr_form;
+  var form_id = model.form_info[form_name].curr_id;
+  return model.form_copy_info[form_name][form_id].prev_id
 }
 interview.GetNumFormCopies = function(model) {
   return model.form_info[model.curr_form].num_copies;
@@ -110,11 +120,37 @@ interview.SetFormId = function(model, new_id) {
   form_info.curr_id = new_id;
   model.data = interview.GetDataObj(model);
 }
+interview.ResetCopyId = function(model, expr, new_id) {
+  var form_name = model.curr_form;
+  var form_info = model.form_info[form_name];
+  var old_id = form_info.curr_id;
+  if (old_id == new_id) {
+    return;
+  }
+  if (model.form_copy_info.hasOwnProperty(new_id)) {
+    interview.ParseError("There is already another form copy with id " + new_id + ".",
+        expr.token, model);
+  }
+  model.form_copy_info[form_name][new_id] = model.form_copy_info[form_name][old_id];
+  delete model.form_info[form_name][old_id];
+  form_info.curr_id = new_id;
+  if (form_info.first_id == old_id) {
+    form_info.first_id = new_id;
+  }
+  if (form_info.next_free_id <= new_id) {
+    form_info.next_free_id = new_id + 1;
+  }
+  // hook up the new copy in the right order
+  var prev_id = interview.GetPrevCopyId(model);
+  if (prev_id >= 0) {
+    model.form_copy_info[form_name][prev_id].next_id = new_id;
+  }
+  var next_id = interview.GetNextCopyId(model);
+  if (next_id >= 0) {
+    model.form_copy_info[form_name][next_id].prev_id = new_id;
+  }
+}
 interview.IncrementFormCopy = function(model, amount) {
-  // form_info[form_name] =
-  //     {num_copies, first_id, curr_id, next_free_id}
-  // form_copy_info[form_name][copy_id] =
-  //     {prev_id, next_id, data}
   var form_name = model.curr_form;
   var form_id = model.form_info[form_name].curr_id;
   while(amount > 0) {
@@ -178,6 +214,8 @@ interview.FORM_KEYWORD = interview.CheckUniqueKeyword("form");
 interview.NEWCOPY_KEYWORD = interview.CheckUniqueKeyword("newcopy");
 interview.NEXTCOPY_KEYWORD = interview.CheckUniqueKeyword("nextcopy");
 interview.PREVCOPY_KEYWORD = interview.CheckUniqueKeyword("prevcopy");
+// This is an internal keyword for restoring state.
+interview.SETCOPYID_KEYWORD = interview.CheckUniqueKeyword("internal_setcopyid");
 
 interview.WHITE_SPACE_TOKEN = interview.CheckUnique("ws");
 interview.IDENTIFIER_TOKEN = interview.CheckUnique("id");
@@ -378,7 +416,8 @@ function HandleNewNode(model, curr, new_node) {
   // First word of two word statements
   if ([interview.START].includes(curr.type)) {
     if ([interview.FORM_KEYWORD, interview.PAGE_KEYWORD, interview.PRINT_KEYWORD,
-         interview.BUTTON_KEYWORD, interview.INPUT_KEYWORD, interview.GOTO_KEYWORD].includes(new_node.type)) {
+         interview.BUTTON_KEYWORD, interview.INPUT_KEYWORD, interview.GOTO_KEYWORD,
+         interview.SETCOPYID_KEYWORD].includes(new_node.type)) {
       if (interview.GOTO_KEYWORD == new_node.type && Object.keys(model.pages).length == 0) {
         interview.ParseError("Cannot use the goto keyword in the model header.",
                    new_node.token, model);
@@ -418,13 +457,13 @@ function HandleNewNode(model, curr, new_node) {
                model.tokens[model.first_token_idx],
                model);
   }
-  if (interview.PRINT_KEYWORD.includes(curr.type)) {
-    if ([interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN].includes(new_node.type)) {
+  if ([interview.PRINT_KEYWORD, interview.SETCOPYID_KEYWORD].includes(curr.type)) {
+    if ([interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN, interview.NUMBER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       model.expression_end = true;
       return new_node;
     }
-    interview.ParseError("Expected String or identifier after print.",
+    interview.ParseError("Expected String or identifier after " + curr.type,
                model.tokens[model.first_token_idx],
                model);
   }
@@ -507,12 +546,13 @@ function ValidateExpression(model, expr) {
     }
     interview.ParseErrorPriorToken("Expected identifier after " + expr.type, model);
   }
-  if ([interview.PRINT_KEYWORD].includes(expr.type)) {
+  if ([interview.PRINT_KEYWORD, interview.SETCOPYID_KEYWORD].includes(expr.type)) {
     if (expr.right != undefined &&
-        [interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN].includes(expr.right.type)) {
+        [interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN, interview.NUMBER_TOKEN
+         ].includes(expr.right.type)) {
       return;
     }
-    interview.ParseErrorPriorToken("Expected string or identifier after print.", model);
+    interview.ParseErrorPriorToken("Expected string, number or identifier after " + expr.type + ".", model);
   }
   if (expr.type == interview.NUMBER_TOKEN) {
     // TODO: should we check if expr.right is a number?
@@ -657,6 +697,10 @@ function Evaluate(model, expr) {
   }
   if (expr.type == interview.PREVCOPY_KEYWORD) {
     interview.IncrementFormCopy(model, -1);
+    return "";
+  }
+  if (expr.type == interview.SETCOPYID_KEYWORD) {
+    interview.ResetCopyId(model, expr, Evaluate(model, expr.right));
     return "";
   }
   interview.ParseError("Unexpected token during Evaluation.", expr.token, model);
@@ -926,7 +970,7 @@ function RenderModel(model, html_form) {
   }
   str += "<button type='button' onclick='interview.DeveloperMode(model);'>Developer</button>";
   str += "</p>";
-  var form_idx = "[" + interview.GetFormId(model) + "]";
+  var form_idx = "[" + interview.GetFormCopyId(model) + "]";
   str += "<p>Form: " + model.curr_form + form_idx + " Page: " + model.current_page + "</p>"
   model.html_form.innerHTML = str;
   while (true) {

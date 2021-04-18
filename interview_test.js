@@ -909,11 +909,11 @@ DefineTest("TestBasicFormsLowLevel").func = function() {
   interview.InitForms(model);
   interview.SetForm(model, "US1040");
   EXPECT_EQ(model.curr_form, "US1040");
-  EXPECT_EQ(interview.GetFormId(model), 0);
+  EXPECT_EQ(interview.GetFormCopyId(model), 0);
   EXPECT_EQ(interview.GetNumFormCopies(model), 1);
   interview.SetForm(model, "US_W2");
   EXPECT_EQ(model.curr_form, "US_W2");
-  EXPECT_EQ(interview.GetFormId(model), 0);
+  EXPECT_EQ(interview.GetFormCopyId(model), 0);
   interview.SetForm(model, "US1040");
   EXPECT_EQ(interview.GetNumFormCopies(model), 1);
   interview.SetForm(model, "US_W2");
@@ -935,42 +935,42 @@ DefineTest("TestMultipleCopiesOfFormsLowLevel").func = function() {
   interview.InitForms(model);
   interview.SetForm(model, "US1040");
   EXPECT_EQ(model.curr_form, "US1040");
-  EXPECT_EQ(interview.GetFormId(model), 0);
+  EXPECT_EQ(interview.GetFormCopyId(model), 0);
   EXPECT_EQ(interview.GetNumFormCopies(model), 1);
   interview.GetDataObj(model).line_1 = "First Copy";
   interview.AppendNewFormCopy(model);
-  EXPECT_EQ(interview.GetFormId(model), 1);
+  EXPECT_EQ(interview.GetFormCopyId(model), 1);
   EXPECT_EQ(interview.GetNumFormCopies(model), 2);
   interview.GetDataObj(model).line_1 = "Second Copy";
 
   interview.IncrementFormCopy(model, -1);
   EXPECT_EQ(model.curr_form, "US1040");
-  EXPECT_EQ(interview.GetFormId(model), 0);
+  EXPECT_EQ(interview.GetFormCopyId(model), 0);
   EXPECT_EQ(interview.GetNumFormCopies(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "First Copy");
 
   interview.IncrementFormCopy(model, 0);
   EXPECT_EQ(model.curr_form, "US1040");
-  EXPECT_EQ(interview.GetFormId(model), 0);
+  EXPECT_EQ(interview.GetFormCopyId(model), 0);
   EXPECT_EQ(interview.GetNumFormCopies(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "First Copy");
 
   interview.IncrementFormCopy(model, 1);
   EXPECT_EQ(model.curr_form, "US1040");
-  EXPECT_EQ(interview.GetFormId(model), 1);
+  EXPECT_EQ(interview.GetFormCopyId(model), 1);
   EXPECT_EQ(interview.GetNumFormCopies(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "Second Copy");
 
   // Go past the bounds
   interview.IncrementFormCopy(model, -2);
   EXPECT_EQ(model.curr_form, "US1040");
-  EXPECT_EQ(interview.GetFormId(model), 0);
+  EXPECT_EQ(interview.GetFormCopyId(model), 0);
   EXPECT_EQ(interview.GetNumFormCopies(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "First Copy");
 
   interview.IncrementFormCopy(model, 2);
   EXPECT_EQ(model.curr_form, "US1040");
-  EXPECT_EQ(interview.GetFormId(model), 1);
+  EXPECT_EQ(interview.GetFormCopyId(model), 1);
   EXPECT_EQ(interview.GetNumFormCopies(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "Second Copy");
 }
@@ -988,17 +988,17 @@ DefineTest("TestDeleteFormLowLevel").func = function() {
   EXPECT_EQ(interview.GetNumFormCopies(model), 4);
 
   interview.SetFormId(model, 2);
-  EXPECT_EQ(interview.GetFormId(model), 2);
+  EXPECT_EQ(interview.GetFormCopyId(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
 
   // Unit under test
   interview.DeleteFormCopy(model);
 
   EXPECT_EQ(interview.GetNumFormCopies(model), 3);
-  EXPECT_EQ(interview.GetFormId(model), 3);
+  EXPECT_EQ(interview.GetFormCopyId(model), 3);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
   interview.SetFormId(model, 1);
-  EXPECT_EQ(interview.GetFormId(model), 1);
+  EXPECT_EQ(interview.GetFormCopyId(model), 1);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 1");
 }
 DefineTest("TestDeleteLastFormLowLevel").func = function() {
@@ -1015,17 +1015,17 @@ DefineTest("TestDeleteLastFormLowLevel").func = function() {
   EXPECT_EQ(interview.GetNumFormCopies(model), 4);
 
   interview.SetFormId(model, 3);
-  EXPECT_EQ(interview.GetFormId(model), 3);
+  EXPECT_EQ(interview.GetFormCopyId(model), 3);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
 
   // unit under test
   interview.DeleteFormCopy(model);
 
   EXPECT_EQ(interview.GetNumFormCopies(model), 3);
-  EXPECT_EQ(interview.GetFormId(model), 2);
+  EXPECT_EQ(interview.GetFormCopyId(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
   interview.IncrementFormCopy(model, 1);
-  EXPECT_EQ(interview.GetFormId(model), 2);
+  EXPECT_EQ(interview.GetFormCopyId(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
 }
 DefineTest("TestDeleteFirstFormLowLevel").func = function() {
@@ -1042,26 +1042,26 @@ DefineTest("TestDeleteFirstFormLowLevel").func = function() {
   EXPECT_EQ(interview.GetNumFormCopies(model), 4);
 
   interview.SetFormId(model, 0);
-  EXPECT_EQ(interview.GetFormId(model), 0);
+  EXPECT_EQ(interview.GetFormCopyId(model), 0);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 0");
 
   // unit under test
   interview.DeleteFormCopy(model);
 
   EXPECT_EQ(interview.GetNumFormCopies(model), 3);
-  EXPECT_EQ(interview.GetFormId(model), 1);
+  EXPECT_EQ(interview.GetFormCopyId(model), 1);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 1");
   interview.IncrementFormCopy(model, -1);
-  EXPECT_EQ(interview.GetFormId(model), 1);
+  EXPECT_EQ(interview.GetFormCopyId(model), 1);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 1");
   interview.IncrementFormCopy(model, 1);
-  EXPECT_EQ(interview.GetFormId(model), 2);
+  EXPECT_EQ(interview.GetFormCopyId(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
   interview.IncrementFormCopy(model, 1);
-  EXPECT_EQ(interview.GetFormId(model), 3);
+  EXPECT_EQ(interview.GetFormCopyId(model), 3);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
   interview.IncrementFormCopy(model, 1);
-  EXPECT_EQ(interview.GetFormId(model), 3);
+  EXPECT_EQ(interview.GetFormCopyId(model), 3);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
 }
 DefineTest("TestMultipleCopiesOfFormsComplexLowLevel").func = function() {
@@ -1083,7 +1083,7 @@ DefineTest("TestMultipleCopiesOfFormsComplexLowLevel").func = function() {
   interview.GetDataObj(model).line_1 = "US_W2 Copy 2";
 
   interview.SetForm(model, "US1040");
-  EXPECT_EQ(interview.GetFormId(model), 3);
+  EXPECT_EQ(interview.GetFormCopyId(model), 3);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
   interview.SetFormId(model, 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
@@ -1091,23 +1091,23 @@ DefineTest("TestMultipleCopiesOfFormsComplexLowLevel").func = function() {
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 0");
 
   interview.SetForm(model, "US_W2");
-  EXPECT_EQ(interview.GetFormId(model), 2);
+  EXPECT_EQ(interview.GetFormCopyId(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US_W2 Copy 2");
 
   interview.SetForm(model, "US1040");
-  EXPECT_EQ(interview.GetFormId(model), 0);
+  EXPECT_EQ(interview.GetFormCopyId(model), 0);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 0");
   interview.AppendNewFormCopy(model);
-  EXPECT_EQ(interview.GetFormId(model), 4);
+  EXPECT_EQ(interview.GetFormCopyId(model), 4);
   interview.DeleteFormCopy(model);
-  EXPECT_EQ(interview.GetFormId(model), 1);
+  EXPECT_EQ(interview.GetFormCopyId(model), 1);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 1");
 
   interview.SetForm(model, "US_W2");
-  EXPECT_EQ(interview.GetFormId(model), 2);
+  EXPECT_EQ(interview.GetFormCopyId(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US_W2 Copy 2");
   interview.DeleteFormCopy(model);
-  EXPECT_EQ(interview.GetFormId(model), 1);
+  EXPECT_EQ(interview.GetFormCopyId(model), 1);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US_W2 Copy 1");
 }
 DefineTest("TestBasicForms").func = function() {
@@ -1335,6 +1335,77 @@ DefineTest("TestSaveState").func = function() {
   interview.DeveloperMode(model);
   interview.SaveState(model);
   interview.SaveState(model);
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
+DefineTest("TestResetFormCopyId").func = function() {
+  var model = Parse("page p1 form foo "+
+                    "page p2 internal_setcopyid 5 " +
+                    "page p3 x = 3; internal_setcopyid x " +
+                    "page p4 newcopy " +
+                    "page p5 prevcopy " +
+                    "page p6 nextcopy");
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  // Just one form copy: 0
+  EXPECT_EQ(interview.GetFormCopyId(model), 0);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 1);
+  model.GoToPage("p2");
+  // Just one form copy: 5
+  EXPECT_EQ(interview.GetFormCopyId(model), 5);
+  EXPECT_EQ(interview.GetNextCopyId(model), -1);
+  EXPECT_EQ(interview.GetPrevCopyId(model), -1);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 1);
+  model.GoToPage("p4");
+  // form copies: 5, 6
+  EXPECT_EQ(interview.GetFormCopyId(model), 6);
+  EXPECT_EQ(interview.GetNextCopyId(model), -1);
+  EXPECT_EQ(interview.GetPrevCopyId(model), 5);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 2);
+  model.GoToPage("p3");
+  // form copies: 5, 3
+  EXPECT_EQ(interview.GetFormCopyId(model), 3);
+  EXPECT_EQ(interview.GetNextCopyId(model), -1);
+  EXPECT_EQ(interview.GetPrevCopyId(model), 5);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 2);
+  model.GoToPage("p4");
+  // form copies: 5, 3, 7
+  EXPECT_EQ(interview.GetFormCopyId(model), 7);
+  EXPECT_EQ(interview.GetNextCopyId(model), -1);
+  EXPECT_EQ(interview.GetPrevCopyId(model), 3);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 3);
+  model.GoToPage("p5");
+  EXPECT_EQ(interview.GetFormCopyId(model), 3);
+  EXPECT_EQ(interview.GetNextCopyId(model), 7);
+  EXPECT_EQ(interview.GetPrevCopyId(model), 5);
+  model.GoToPage("p5");
+  EXPECT_EQ(interview.GetFormCopyId(model), 5);
+  EXPECT_EQ(interview.GetNextCopyId(model), 3);
+  EXPECT_EQ(interview.GetPrevCopyId(model), -1);
+  model.GoToPage("p5");
+  EXPECT_EQ(interview.GetFormCopyId(model), 5);
+  model.GoToPage("p6");
+  EXPECT_EQ(interview.GetFormCopyId(model), 3);
+  model.GoToPage("p6");
+  EXPECT_EQ(interview.GetFormCopyId(model), 7);
+  model.GoToPage("p6");
+  EXPECT_EQ(interview.GetFormCopyId(model), 7);
+
+  interview.SetForm(model, "bar");
+  EXPECT_EQ(model.curr_form, "bar");
+  EXPECT_EQ(interview.GetFormCopyId(model), 0);
+  EXPECT_EQ(model.curr_form, "bar");
+  EXPECT_EQ(interview.GetNumFormCopies(model), 1);
+  EXPECT_EQ(model.curr_form, "bar");
+  model.GoToPage("p2");
+  EXPECT_EQ(model.curr_form, "bar");
+  EXPECT_EQ(interview.GetFormCopyId(model), 5);
+  EXPECT_EQ(model.curr_form, "bar");
+  EXPECT_EQ(interview.GetNumFormCopies(model), 1);
+  interview.SetForm(model, "foo");
+  EXPECT_EQ(interview.GetFormCopyId(model), 7);
+  EXPECT_EQ(interview.GetNumFormCopies(model), 3);
   // For manual testing, don't remove the form element.
   form.remove();
 }
