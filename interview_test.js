@@ -1313,19 +1313,33 @@ DefineTest("TestGetTextIndexOfPage").func = function() {
   EXPECT_EQ(idx, 212);
 }
 DefineTest("TestSaveState").func = function() {
-  var model = Parse("page start form foo x = 7;");
+  var original_model = "page start form foo x = 7;\n" +
+                       "page p2 newcopy x = \"hello\"; goto p3\n" +
+                       "page p3\n";
+  var model = Parse(original_model);
   var form = document.createElement("form");
   document.body.appendChild(form);
   RenderModel(model, form);
+  model.GoToPage("p2");
   interview.DeveloperMode(model);
   // hack to make the test reproducible
   model.dev_mode_start_time = new Date("2021-04-17T13:51:03");
   interview.SaveState(model);
   var text=document.getElementById(model.dev_mode_textbox).value;
-  var expected_model_1 = "page Restore_from_2021_04_17_at_13_51_03\n" +
-     "  /* TODO: Add code to actually restore the model */\n" +
-     "  goto start\n\n" +
-     "page start form foo x = 7;";
+  var expected_model_1 = 
+     "page Restore_from_2021_04_17_at_13_51_03\n" +
+     "  form scratch\n" +
+     "  internal_resetcopyid 0\n" +
+     "  form foo\n" +
+     "  internal_resetcopyid 0\n" +
+     "  x = 7;\n" +
+     "  internal_resetcopyid 1\n" +
+     "  x = \"hello\";\n" +
+     "  form foo /* last_known_form */\n" +
+     "  /* TODO: GOTO last_known_form_copy 1 */\n" +
+     "  goto p3 /* last_known_page */\n" +
+     "  goto start/* first page - Dead code unless you delete the prior goto. */\n\n" +
+     original_model;
   EXPECT_EQ(text, expected_model_1);
   interview.SaveState(model);
   interview.SaveState(model);
@@ -1340,8 +1354,8 @@ DefineTest("TestSaveState").func = function() {
 }
 DefineTest("TestResetFormCopyId").func = function() {
   var model = Parse("page p1 form foo "+
-                    "page p2 internal_setcopyid 5 " +
-                    "page p3 x = 3; internal_setcopyid x " +
+                    "page p2 internal_resetcopyid 5 " +
+                    "page p3 x = 3; internal_resetcopyid x " +
                     "page p4 newcopy " +
                     "page p5 prevcopy " +
                     "page p6 nextcopy");

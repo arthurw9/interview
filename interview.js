@@ -57,12 +57,12 @@ interview.GetFormCopyId = function(model) {
 interview.GetNextCopyId = function(model) {
   var form_name = model.curr_form;
   var form_id = model.form_info[form_name].curr_id;
-  return model.form_copy_info[form_name][form_id].next_id
+  return model.form_copy_info[form_name][form_id].next_id;
 }
 interview.GetPrevCopyId = function(model) {
   var form_name = model.curr_form;
   var form_id = model.form_info[form_name].curr_id;
-  return model.form_copy_info[form_name][form_id].prev_id
+  return model.form_copy_info[form_name][form_id].prev_id;
 }
 interview.GetNumFormCopies = function(model) {
   return model.form_info[model.curr_form].num_copies;
@@ -215,7 +215,7 @@ interview.NEWCOPY_KEYWORD = interview.CheckUniqueKeyword("newcopy");
 interview.NEXTCOPY_KEYWORD = interview.CheckUniqueKeyword("nextcopy");
 interview.PREVCOPY_KEYWORD = interview.CheckUniqueKeyword("prevcopy");
 // This is an internal keyword for restoring state.
-interview.SETCOPYID_KEYWORD = interview.CheckUniqueKeyword("internal_setcopyid");
+interview.SETCOPYID_KEYWORD = interview.CheckUniqueKeyword("internal_resetcopyid");
 
 interview.WHITE_SPACE_TOKEN = interview.CheckUnique("ws");
 interview.IDENTIFIER_TOKEN = interview.CheckUnique("id");
@@ -797,6 +797,22 @@ interview.GetTextIndexOfPage = function(model, page_name) {
   var first_token = model.tokens[first_token_idx];
   return first_token[1];
 }
+interview.DataToFormula = function(model) {
+  var results = [];
+  for(var var_name in model.data) {
+    var quote = "";
+    if (model.data[var_name] != Number(model.data[var_name])) {
+      var quote = "\"";
+      var i = 0;
+      while (model.data[var_name].includes(quote)) {
+        quote = "z" + i + "\"";
+        i += 1;
+      }
+    }
+    results.push("  " + var_name + " = " + quote + model.data[var_name] + quote + ";\n");
+  }
+  return results.join("");
+}
 interview.SaveState = function(model) {
   gtag('event', 'screen_view', {
     'screen_name' : 'SaveState'
@@ -806,12 +822,28 @@ interview.SaveState = function(model) {
   if (model.text == new_code_textbox.value) {
     proceed = true
   }
+  var last_known_page = model.current_page;
+  var last_known_form = model.curr_form;
+  var last_know_form_copy = interview.GetFormCopyId(model);
   var original_first_page = interview.FindFirstPage(model);
   // TODO: Check if original first page is already an older restore page?
   var save_page_name = interview.GetSavePageName(model.dev_mode_start_time);
   var save_page = "page " + save_page_name + "\n";
-  save_page += "  /* TODO: Add code to actually restore the model */\n";
-  save_page += "  goto " + original_first_page + "\n\n";
+  for (var form_name in model.form_info) {
+    save_page += "  form " + form_name + "\n";
+    interview.SetForm(model, form_name);
+    var copy_id = model.form_info[form_name].first_id;
+    while(copy_id >= 0) {
+      save_page += "  internal_resetcopyid " + copy_id + "\n";
+      interview.SetFormId(model, copy_id);
+      save_page += interview.DataToFormula(model);
+      copy_id = model.form_copy_info[form_name][copy_id].next_id;
+    }
+  }
+  save_page += "  form " + last_known_form + " /* last_known_form */\n";
+  save_page += "  /* TODO: GOTO last_known_form_copy " + last_know_form_copy + " */\n";
+  save_page += "  goto " + last_known_page + " /* last_known_page */\n";
+  save_page += "  goto " + original_first_page + "/* first page - Dead code unless you delete the prior goto. */\n\n";
   var char_idx = interview.GetTextIndexOfPage(model, original_first_page);
   var prefix = model.text.substr(0, char_idx);
   var suffix = model.text.substr(char_idx);
