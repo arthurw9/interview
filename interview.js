@@ -537,7 +537,8 @@ function ValidateExpression(model, expr) {
     interview.ParseErrorPriorToken("Unexpected empty expression.", model);
   }
   // TODO: Should we check that left and right are empty?
-  if ([interview.NEWCOPY_KEYWORD, interview.NEXTCOPY_KEYWORD, interview.PREVCOPY_KEYWORD].includes(expr.type)) {
+  if ([interview.NEWCOPY_KEYWORD, interview.NEXTCOPY_KEYWORD,
+       interview.PREVCOPY_KEYWORD].includes(expr.type)) {
     return;
   }
   if ([interview.FORM_KEYWORD, interview.PAGE_KEYWORD, interview.BUTTON_KEYWORD,
@@ -639,7 +640,7 @@ function ExpressionDebugString(model, expr) {
   }
   return "Unexpected expression type: " + expr.type;
 }
-function RemoveQuotes(str) {
+interview.RemoveQuotes = function(str) {
   var idx = 0;
   while (idx < str.length && str[idx] != "\"") {
     idx++;
@@ -657,7 +658,7 @@ function Evaluate(model, expr) {
     return Number(expr.right);
   }
   if (expr.type == interview.STRING_TOKEN) {
-    return RemoveQuotes(String(expr.right));
+    return interview.RemoveQuotes(String(expr.right));
   }
   if (expr.type == "+") {
     return Evaluate(model, expr.left) + Evaluate(model, expr.right);
@@ -738,7 +739,7 @@ function RenderExpression(model, expr) {
     var str = "<input type=\"text\" name=\"" + identifier_name + 
         "\" size=\"20\" id=" + id + " onblur=\"model.Read(this);\">";
     // TODO: Need to verify:
-    // The same identifier should not input more than once on a page.
+    // The same identifier should not be input more than once on a page.
     if (model.data.hasOwnProperty(identifier_name)) {
       if (!model.InitializerList) {
         model.InitializerList = [];
@@ -1026,7 +1027,7 @@ function RunModel(model) {
     Evaluate(model, model.expression_list[i].expression);
   }
 }
-function GetEmptyModel(text) {
+interview.GetEmptyModel = function(text) {
   // TODO: Should model be organized with sub-objects? (parse_info, runtime_status, data)
   var model = {};
   model.text = text;
@@ -1050,7 +1051,7 @@ interview.FindFirstPage = function(model) {
   return page;
 }
 function Parse(text) {
-  var model = GetEmptyModel(text);
+  var model = interview.GetEmptyModel(text);
   interview.Tokenize(model);
   CleanTokens(model);
   while (model.token_idx < model.tokens.length) {

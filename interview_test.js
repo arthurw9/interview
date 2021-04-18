@@ -715,8 +715,6 @@ DefineTest("TestDefaultNavigation").func = function() {
   EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), true);
   // For manual testing, don't remove the form element.
   form.remove();
-  // TODO: Implement and test all the remaining buttons:
-  // History, Data { Back to Form, Clear },
 }
 DefineTest("TestDeveloperMode").func = function() {
   var model = Parse("");
