@@ -1,31 +1,67 @@
 function FAIL(msg) {
+  console.log(current_test_name);
   console.trace("ERROR: " + msg);
 }
 function EXPECT_EQ(a, b) {
   if (a==b) return;
+  console.log(current_test_name);
   console.trace("ERROR: Not Equal: [", a, "] = [", b, "]");
 }
 function EXPECT_INCLUDES(list, value) {
   if (list.includes(value)) return;
+  console.log(current_test_name);
   console.trace("ERROR: Does not include [", value, "]: [", list, "]");
 }
 function EXPECT_SUBSTR(haystack, needle) {
   if (haystack.includes(needle)) return;
+  console.log(current_test_name);
   console.trace("ERROR: Does contain substring [", needle, "]: [", haystack, "]");
 }
 function EXPECT_NOT_SUBSTR(haystack, needle) {
   if (haystack.includes(needle)) {
+    console.log(current_test_name);
     console.trace("ERROR: Contains unexpected substring [", needle, "]: [", haystack, "]");
   }
 }
-
+var tests = [];
+var current_test_name = "";
+function DefineTest(name) {
+  var t = {};
+  t.name = name,
+  tests.push(t);
+  return t;
+}
+function RunTestsInOrder() {
+  console.log("Testing: START");
+  for(var i = 0; i < tests.length; i++) {
+    current_test_name = tests[i].name;
+    tests[i].func();
+  }
+  console.log("Testing: DONE");
+  console.log("Testing: " + tests.length + " tests");
+}
+function RunTestsRandomly() {
+  console.log("Testing: START");
+  var tests_to_run = [];
+  for(var i = 0; i < tests.length; i++) {
+    tests_to_run[i] = tests[i];
+  }
+  while(tests_to_run.length > 0) {
+    var i = Math.floor(Math.random() * tests_to_run.length);
+    var curr_test = tests_to_run.splice(i, 1);
+    current_test_name = curr_test[0].name;
+    curr_test[0].func();
+  }
+  console.log("Testing: DONE");
+  console.log("Testing: " + tests.length + " tests");
+}
 function TokenizeForTest(str) {
   var model = {};
   model.text = str;
   interview.Tokenize(model);
   return model.tokens;
 }
-function TestTokenizeNumbers() {
+DefineTest("TestTokenizeNumbers").func = function() {
   var model = {};
   model.text = "1020339";
   interview.Tokenize(model);
@@ -81,7 +117,7 @@ function TestTokenizeNumbers() {
   EXPECT_EQ(tokens[2][1], 5);
   EXPECT_EQ(tokens[2][2], 2);
 }
-function TestTokenizeOneToken() {
+DefineTest("TestTokenizeOneToken").func = function() {
   var tokens = TokenizeForTest(" \n\r\t ");
   EXPECT_EQ(tokens.length, 1);
   EXPECT_EQ(tokens[0][0], interview.WHITE_SPACE_TOKEN);
@@ -109,7 +145,7 @@ function TestTokenizeOneToken() {
   EXPECT_EQ(tokens[0][2], 35);
   EXPECT_EQ(s.length, 35);
 }
-function TestTokenizeManyTokens() {
+DefineTest("TestTokenizeManyTokens").func = function() {
   var tokens = TokenizeForTest(" xXx =   yY09;\n alert();");
   EXPECT_EQ(tokens.length, 12);
   var token_num = 0;
@@ -196,7 +232,7 @@ function TestTokenizeManyTokens() {
   EXPECT_EQ(tokens[token_num][1], 28);
   EXPECT_EQ(tokens[token_num][2], 15);
 }
-function TestTokenizeBadNumbers() {
+DefineTest("TestTokenizeBadNumbers").func = function() {
   var tokens = TokenizeForTest("xx999.0993");
   EXPECT_EQ(tokens.length, 3);
   var token_num = 0;
@@ -245,7 +281,7 @@ function TestTokenizeBadNumbers() {
   EXPECT_EQ(tokens[token_num][1], 7);
   EXPECT_EQ(tokens[token_num][2], 3);
 }
-function TestCleanTokens() {
+DefineTest("TestCleanTokens").func = function() {
   var text = "  x /* hi */ = y 100.0 \" \" ;";
   var model = {};
   model.text = text;
@@ -279,7 +315,7 @@ function TestCleanTokens() {
   EXPECT_EQ(tokens[idx][1], 27);
   EXPECT_EQ(tokens[idx][2], 1);
 }
-function TestParseAndRunAssignments() {
+DefineTest("TestParseAndRunAssignments").func = function() {
   var model = Parse("x = \"hello world\";");
   EXPECT_EQ(model.expression_list.length, 1);
   EXPECT_EQ(model.expression_list[0].first_token_idx, 0);
@@ -412,13 +448,13 @@ function TestParseAndRunAssignments() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], 3);
 }
-function TestParseAndRunAssignmentsWithState() {
+DefineTest("TestParseAndRunAssignmentsWithState").func = function() {
   var model = Parse("x = 1; y = 2; x = x + y; y = y + 2; x = x * y;");
   RunModel(model);
   EXPECT_EQ(model.data["x"], 12);
   EXPECT_EQ(model.data["y"], 4);
 }
-function TestValidatingAssignments() {
+DefineTest("TestValidatingAssignments").func = function() {
   try {
     model = Parse("/* ; blah \" foo ; \" */; x=2;");
     FAIL("/* ; blah \" foo ; \" */; x=2; Should throw an error.");
@@ -458,7 +494,7 @@ function TestValidatingAssignments() {
   model = Parse("/* Should empty expressions parse? lol */");
   EXPECT_EQ(model.expression_list.length, 0);
 }
-function TestValidatingFormExpressions() {
+DefineTest("TestValidatingFormExpressions").func = function() {
   try {
     model = Parse("Form form");
     FAIL("Form form Should throw an error.");
@@ -494,7 +530,7 @@ function TestValidatingFormExpressions() {
         "P/* Here */AGE");
   }
 }
-function TestTokenizeIdDelimitedStrings() {
+DefineTest("TestTokenizeIdDelimitedStrings").func = function() {
   var tokens = TokenizeForTest("\"hello\n\n\rworld\"");
   EXPECT_EQ(tokens.length, 1);
   EXPECT_EQ(tokens[0][0], interview.STRING_TOKEN);
@@ -545,7 +581,7 @@ function TestTokenizeIdDelimitedStrings() {
   EXPECT_EQ(s.length, 52);
   EXPECT_EQ(tokens[1][2], 50);
 }
-function TestEvaluateStrings() {
+DefineTest("TestEvaluateStrings").func = function() {
   var model = Parse("x = \"hello world\";");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "hello world");
@@ -570,7 +606,7 @@ function TestEvaluateStrings() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], "\"");
 }
-function TestStringAddition() {
+DefineTest("TestStringAddition").func = function() {
   var model = Parse("x = \"hello \" + \"world\";");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "hello world");
@@ -591,7 +627,7 @@ function TestStringAddition() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], "hello 123123");
 }
-function TestTokenizeKeywords() {
+DefineTest("TestTokenizeKeywords").func = function() {
   var str = "form";
   var tokens = TokenizeForTest(str);
   EXPECT_EQ(tokens.length, 1);
@@ -624,7 +660,7 @@ function TestTokenizeKeywords() {
   EXPECT_EQ(tokens[0][2], 6);
   EXPECT_EQ("button", str.substr(tokens[0][1], tokens[0][2]));
 }
-function TestDefaultNavigation() {
+DefineTest("TestDefaultNavigation").func = function() {
   var model = Parse(
       "form US1040 " +
       "form Schedule_A " +
@@ -674,7 +710,7 @@ function TestDefaultNavigation() {
   // TODO: Implement and test all the remaining buttons:
   // History, Data { Back to Form, Clear },
 }
-function TestDeveloperMode() {
+DefineTest("TestDeveloperMode").func = function() {
   var model = Parse("");
   var form = document.createElement("form");
   document.body.appendChild(form);
@@ -703,7 +739,7 @@ function TestDeveloperMode() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestPrintWithData() {
+DefineTest("TestPrintWithData").func = function() {
   var str =   "form foo " +
     "page one " +
     "x = 1; " +
@@ -719,7 +755,7 @@ function TestPrintWithData() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestPageNavigation() {
+DefineTest("TestPageNavigation").func = function() {
   var model = Parse(
       "form US1040 " +
 
@@ -775,7 +811,7 @@ function TestPageNavigation() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestInputStatements() {
+DefineTest("TestInputStatements").func = function() {
   var str = "form US1040\n" +
     "\n" +
     "page enter\n" +
@@ -841,7 +877,7 @@ function TestInputStatements() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestRenderingRunsTheTopCodeForAllPages() {
+DefineTest("TestRenderingRunsTheTopCodeForAllPages").func = function() {
    var str = "/* This should run on every page */\n" +
     "x = 11;\n" +
     "y = \"hello\";\n" +
@@ -868,7 +904,7 @@ function TestRenderingRunsTheTopCodeForAllPages() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestBasicFormsLowLevel() {
+DefineTest("TestBasicFormsLowLevel").func = function() {
   var model = {};
   interview.InitForms(model);
   interview.SetForm(model, "US1040");
@@ -894,7 +930,7 @@ function TestBasicFormsLowLevel() {
   interview.SetForm(model, "US_W2");
   EXPECT_EQ(interview.GetDataObj(model).line_1, "Hello W2");
 }
-function TestMultipleCopiesOfFormsLowLevel() {
+DefineTest("TestMultipleCopiesOfFormsLowLevel").func = function() {
   var model = {};
   interview.InitForms(model);
   interview.SetForm(model, "US1040");
@@ -938,7 +974,7 @@ function TestMultipleCopiesOfFormsLowLevel() {
   EXPECT_EQ(interview.GetNumFormCopies(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "Second Copy");
 }
-function TestDeleteFormLowLevel() {
+DefineTest("TestDeleteFormLowLevel").func = function() {
   var model = {};
   interview.InitForms(model);
   interview.SetForm(model, "US1040");
@@ -965,7 +1001,7 @@ function TestDeleteFormLowLevel() {
   EXPECT_EQ(interview.GetFormId(model), 1);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 1");
 }
-function TestDeleteLastFormLowLevel() {
+DefineTest("TestDeleteLastFormLowLevel").func = function() {
   var model = {};
   interview.InitForms(model);
   interview.SetForm(model, "US1040");
@@ -992,7 +1028,7 @@ function TestDeleteLastFormLowLevel() {
   EXPECT_EQ(interview.GetFormId(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
 }
-function TestDeleteFirstFormLowLevel() {
+DefineTest("TestDeleteFirstFormLowLevel").func = function() {
   var model = {};
   interview.InitForms(model);
   interview.SetForm(model, "US1040");
@@ -1028,7 +1064,7 @@ function TestDeleteFirstFormLowLevel() {
   EXPECT_EQ(interview.GetFormId(model), 3);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
 }
-function TestMultipleCopiesOfFormsComplexLowLevel() {
+DefineTest("TestMultipleCopiesOfFormsComplexLowLevel").func = function() {
   var model = {};
   interview.InitForms(model);
   interview.SetForm(model, "US1040");
@@ -1074,7 +1110,7 @@ function TestMultipleCopiesOfFormsComplexLowLevel() {
   EXPECT_EQ(interview.GetFormId(model), 1);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US_W2 Copy 1");
 }
-function TestBasicForms() {
+DefineTest("TestBasicForms").func = function() {
   var str = "button init button a button b button c\n" +
     "page init\n" +
     "  form one\n" +
@@ -1117,7 +1153,7 @@ function TestBasicForms() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestGotoKeyword() {
+DefineTest("TestGotoKeyword").func = function() {
   var str = "button a\n" +
     "button b\n" +
     "print \"\"\n" +
@@ -1150,7 +1186,7 @@ function TestGotoKeyword() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestGotoKeywordInHeader() {
+DefineTest("TestGotoKeywordInHeader").func = function() {
   var str = "button a\n" +
     "goto b\n" +
     "page a\n" +
@@ -1168,7 +1204,7 @@ function TestGotoKeywordInHeader() {
         "page b\n");
   }
 }
-function TestCreateMultipleCopiesOfForms() {
+DefineTest("TestCreateMultipleCopiesOfForms").func = function() {
   var str = "form US1040\n" +
     "\n" +
     "page edit_w2\n" +
@@ -1220,18 +1256,18 @@ function TestCreateMultipleCopiesOfForms() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestZeroPrefix() {
+DefineTest("TestZeroPrefix").func = function() {
   EXPECT_EQ(interview.ZeroPrefix(3), "03");
   EXPECT_EQ(interview.ZeroPrefix(3, 1), "3");
   EXPECT_EQ(interview.ZeroPrefix(3, 2), "03");
   EXPECT_EQ(interview.ZeroPrefix(3, 3), "003");
 }
-function TestGetSavePageName() {
+DefineTest("TestGetSavePageName").func = function() {
   var dt = new Date('December 17, 1995 03:24:00');
   var page_name = interview.GetSavePageName(dt);
   EXPECT_EQ(page_name, "Restore_from_1995_12_17_at_03_24_00");
 }
-function TestFindFirstPage() {
+DefineTest("TestFindFirstPage").func = function() {
   var model = Parse(
       "form page_foo " +
       "form page_bar " +
@@ -1246,7 +1282,7 @@ function TestFindFirstPage() {
   );
   EXPECT_EQ(interview.FindFirstPage(model), "start");
 }
-function TestGetTextIndexOfPage() {
+DefineTest("TestGetTextIndexOfPage").func = function() {
   var model = Parse(
       "form page_foo " +
       "form page_bar " +
@@ -1276,7 +1312,7 @@ function TestGetTextIndexOfPage() {
   EXPECT_EQ(idx, model.text.length);
   EXPECT_EQ(idx, 212);
 }
-function TestSaveState() {
+DefineTest("TestSaveState").func = function() {
   var model = Parse("page start form foo x = 7;");
   var form = document.createElement("form");
   document.body.appendChild(form);
@@ -1302,43 +1338,5 @@ function TestSaveState() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
-function TestAll() {
-  console.log("Testing: START");
-  TestTokenizeNumbers();
-  TestTokenizeOneToken();
-  TestTokenizeManyTokens();
-  TestTokenizeBadNumbers();
-  TestCleanTokens();
-  TestParseAndRunAssignments();
-  TestParseAndRunAssignmentsWithState();
-  TestValidatingAssignments();
-  TestValidatingFormExpressions();
-  TestTokenizeIdDelimitedStrings();
-  TestEvaluateStrings();
-  TestStringAddition();
-  TestTokenizeKeywords();
-  TestDefaultNavigation();
-  TestDeveloperMode();
-  TestPrintWithData();
-  TestPageNavigation();
-  TestInputStatements();
-  TestRenderingRunsTheTopCodeForAllPages(); 
-  TestBasicFormsLowLevel();
-  TestMultipleCopiesOfFormsLowLevel();
-  TestDeleteFormLowLevel();
-  TestDeleteLastFormLowLevel();
-  TestDeleteFirstFormLowLevel();
-  TestMultipleCopiesOfFormsComplexLowLevel();
-  TestBasicForms();
-  TestGotoKeyword();
-  TestGotoKeywordInHeader();
-  TestCreateMultipleCopiesOfForms();
-  TestZeroPrefix();
-  TestGetSavePageName();
-  TestFindFirstPage();
-  TestGetTextIndexOfPage();
-  TestSaveState();
-  console.log("Testing: DONE");
-}
-TestAll();
+RunTestsRandomly();
 
