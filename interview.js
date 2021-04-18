@@ -114,7 +114,7 @@ interview.DeleteFormCopy = function(model) {
   delete model.form_info[form_name][old_copy_id];
   model.data = interview.GetDataObj(model);
 }
-interview.SetFormId = function(model, new_id) {
+interview.UseCopyId = function(model, new_id) {
   var form_name = model.curr_form;
   var form_info = model.form_info[form_name];
   form_info.curr_id = new_id;
@@ -167,7 +167,7 @@ interview.IncrementFormCopy = function(model, amount) {
       form_id = prev_id;
     }
   }
-  interview.SetFormId(model, form_id);
+  interview.UseCopyId(model, form_id);
 }
 interview.ParseError = function(msg, token, model) {
   var idx = token[1];
@@ -214,6 +214,7 @@ interview.FORM_KEYWORD = interview.CheckUniqueKeyword("form");
 interview.NEWCOPY_KEYWORD = interview.CheckUniqueKeyword("newcopy");
 interview.NEXTCOPY_KEYWORD = interview.CheckUniqueKeyword("nextcopy");
 interview.PREVCOPY_KEYWORD = interview.CheckUniqueKeyword("prevcopy");
+interview.USECOPY_KEYWORD = interview.CheckUniqueKeyword("usecopy");
 // This is an internal keyword for restoring state.
 interview.SETCOPYID_KEYWORD = interview.CheckUniqueKeyword("internal_resetcopyid");
 
@@ -417,7 +418,7 @@ function HandleNewNode(model, curr, new_node) {
   if ([interview.START].includes(curr.type)) {
     if ([interview.FORM_KEYWORD, interview.PAGE_KEYWORD, interview.PRINT_KEYWORD,
          interview.BUTTON_KEYWORD, interview.INPUT_KEYWORD, interview.GOTO_KEYWORD,
-         interview.SETCOPYID_KEYWORD].includes(new_node.type)) {
+         interview.SETCOPYID_KEYWORD, interview.USECOPY_KEYWORD].includes(new_node.type)) {
       if (interview.GOTO_KEYWORD == new_node.type && Object.keys(model.pages).length == 0) {
         interview.ParseError("Cannot use the goto keyword in the model header.",
                    new_node.token, model);
@@ -457,8 +458,10 @@ function HandleNewNode(model, curr, new_node) {
                model.tokens[model.first_token_idx],
                model);
   }
-  if ([interview.PRINT_KEYWORD, interview.SETCOPYID_KEYWORD].includes(curr.type)) {
-    if ([interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN, interview.NUMBER_TOKEN].includes(new_node.type)) {
+  if ([interview.PRINT_KEYWORD, interview.SETCOPYID_KEYWORD,
+       interview.USECOPY_KEYWORD].includes(curr.type)) {
+    if ([interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN,
+        interview.NUMBER_TOKEN].includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       model.expression_end = true;
       return new_node;
@@ -546,7 +549,8 @@ function ValidateExpression(model, expr) {
     }
     interview.ParseErrorPriorToken("Expected identifier after " + expr.type, model);
   }
-  if ([interview.PRINT_KEYWORD, interview.SETCOPYID_KEYWORD].includes(expr.type)) {
+  if ([interview.PRINT_KEYWORD, interview.SETCOPYID_KEYWORD,
+       interview.USECOPY_KEYWORD].includes(expr.type)) {
     if (expr.right != undefined &&
         [interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN, interview.NUMBER_TOKEN
          ].includes(expr.right.type)) {
@@ -699,6 +703,10 @@ function Evaluate(model, expr) {
     interview.IncrementFormCopy(model, -1);
     return "";
   }
+  if (expr.type == interview.USECOPY_KEYWORD) {
+    interview.UseCopyId(model, Evaluate(model, expr.right));
+    return "";
+  }
   if (expr.type == interview.SETCOPYID_KEYWORD) {
     interview.ResetCopyId(model, expr, Evaluate(model, expr.right));
     return "";
@@ -835,13 +843,13 @@ interview.SaveState = function(model) {
     var copy_id = model.form_info[form_name].first_id;
     while(copy_id >= 0) {
       save_page += "  internal_resetcopyid " + copy_id + "\n";
-      interview.SetFormId(model, copy_id);
+      interview.UseCopyId(model, copy_id);
       save_page += interview.DataToFormula(model);
       copy_id = model.form_copy_info[form_name][copy_id].next_id;
     }
   }
   save_page += "  form " + last_known_form + " /* last_known_form */\n";
-  save_page += "  /* TODO: GOTO last_known_form_copy " + last_know_form_copy + " */\n";
+  save_page += "  usecopy " + last_know_form_copy + " /* last_known_copy_id */\n";
   save_page += "  goto " + last_known_page + " /* last_known_page */\n";
   save_page += "  goto " + original_first_page + "/* first page - Dead code unless you delete the prior goto. */\n\n";
   var char_idx = interview.GetTextIndexOfPage(model, original_first_page);

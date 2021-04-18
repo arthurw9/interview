@@ -18,7 +18,6 @@ Database Features:
 - Create foreign key constraints between forms.
 
 IDE features:
-- Save the current state of the model.
 - Put line numbers in the Developer text box.
 - Make parse time error messages show up in the Developer text box in red comments.
 - Make run time error messages show in an alert box. Maybe?

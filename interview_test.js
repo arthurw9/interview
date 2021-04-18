@@ -35,7 +35,11 @@ function RunTestsInOrder() {
   console.log("Testing: START");
   for(var i = 0; i < tests.length; i++) {
     current_test_name = tests[i].name;
-    tests[i].func();
+    try {
+      tests[i].func();
+    } catch(err) {
+      FAIL(err);
+    }
   }
   console.log("Testing: DONE");
   console.log("Testing: " + tests.length + " tests");
@@ -50,7 +54,11 @@ function RunTestsRandomly() {
     var i = Math.floor(Math.random() * tests_to_run.length);
     var curr_test = tests_to_run.splice(i, 1);
     current_test_name = curr_test[0].name;
-    curr_test[0].func();
+    try {
+      curr_test[0].func();
+    } catch(err) {
+      FAIL(err);
+    }
   }
   console.log("Testing: DONE");
   console.log("Testing: " + tests.length + " tests");
@@ -987,7 +995,7 @@ DefineTest("TestDeleteFormLowLevel").func = function() {
   interview.GetDataObj(model).line_1 = "US1040 Copy 3";
   EXPECT_EQ(interview.GetNumFormCopies(model), 4);
 
-  interview.SetFormId(model, 2);
+  interview.UseCopyId(model, 2);
   EXPECT_EQ(interview.GetFormCopyId(model), 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
 
@@ -997,7 +1005,7 @@ DefineTest("TestDeleteFormLowLevel").func = function() {
   EXPECT_EQ(interview.GetNumFormCopies(model), 3);
   EXPECT_EQ(interview.GetFormCopyId(model), 3);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
-  interview.SetFormId(model, 1);
+  interview.UseCopyId(model, 1);
   EXPECT_EQ(interview.GetFormCopyId(model), 1);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 1");
 }
@@ -1014,7 +1022,7 @@ DefineTest("TestDeleteLastFormLowLevel").func = function() {
   interview.GetDataObj(model).line_1 = "US1040 Copy 3";
   EXPECT_EQ(interview.GetNumFormCopies(model), 4);
 
-  interview.SetFormId(model, 3);
+  interview.UseCopyId(model, 3);
   EXPECT_EQ(interview.GetFormCopyId(model), 3);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
 
@@ -1041,7 +1049,7 @@ DefineTest("TestDeleteFirstFormLowLevel").func = function() {
   interview.GetDataObj(model).line_1 = "US1040 Copy 3";
   EXPECT_EQ(interview.GetNumFormCopies(model), 4);
 
-  interview.SetFormId(model, 0);
+  interview.UseCopyId(model, 0);
   EXPECT_EQ(interview.GetFormCopyId(model), 0);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 0");
 
@@ -1085,7 +1093,7 @@ DefineTest("TestMultipleCopiesOfFormsComplexLowLevel").func = function() {
   interview.SetForm(model, "US1040");
   EXPECT_EQ(interview.GetFormCopyId(model), 3);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 3");
-  interview.SetFormId(model, 2);
+  interview.UseCopyId(model, 2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 2");
   interview.IncrementFormCopy(model, -2);
   EXPECT_EQ(interview.GetDataObj(model).line_1, "US1040 Copy 0");
@@ -1256,6 +1264,54 @@ DefineTest("TestCreateMultipleCopiesOfForms").func = function() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
+DefineTest("TestUseCopyKeyword").func = function() {
+  var str = "form foo\n" +
+    "\n" +
+    "page make_copies\n" +
+    "  x = \"copy = 0\";\n" +
+    "  newcopy\n" +
+    "  x = \"copy = 1\";\n" +
+    "  newcopy\n" +
+    "  x = \"copy = 2\";\n" +
+    "  newcopy\n" +
+    "  x = \"copy = 3\";\n" +
+    "\n" +
+    "page usecopy0\n" +
+    "  usecopy 0\n" +
+    "  print x\n" +
+    "\n" +
+    "page usecopy1\n" +
+    "  usecopy 1\n" +
+    "  print x\n" +
+    "\n" +
+    "page usecopy2\n" +
+    "  usecopy 2\n" +
+    "  print x\n" +
+    "\n" +
+    "page usecopy3\n" +
+    "  usecopy 3\n" +
+    "  print x\n" +
+    "\n";
+  var model = Parse(str);
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  EXPECT_SUBSTR(form.innerHTML, "Form: foo[3]");
+  model.GoToPage("usecopy0");
+  EXPECT_SUBSTR(form.innerHTML, "Form: foo[0]");
+  EXPECT_SUBSTR(form.innerHTML, "copy = 0");
+  model.GoToPage("usecopy2");
+  EXPECT_SUBSTR(form.innerHTML, "Form: foo[2]");
+  EXPECT_SUBSTR(form.innerHTML, "copy = 2");
+  model.GoToPage("usecopy3");
+  EXPECT_SUBSTR(form.innerHTML, "Form: foo[3]");
+  EXPECT_SUBSTR(form.innerHTML, "copy = 3");
+  model.GoToPage("usecopy1");
+  EXPECT_SUBSTR(form.innerHTML, "Form: foo[1]");
+  EXPECT_SUBSTR(form.innerHTML, "copy = 1");
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
 DefineTest("TestZeroPrefix").func = function() {
   EXPECT_EQ(interview.ZeroPrefix(3), "03");
   EXPECT_EQ(interview.ZeroPrefix(3, 1), "3");
@@ -1336,7 +1392,7 @@ DefineTest("TestSaveState").func = function() {
      "  internal_resetcopyid 1\n" +
      "  x = \"hello\";\n" +
      "  form foo /* last_known_form */\n" +
-     "  /* TODO: GOTO last_known_form_copy 1 */\n" +
+     "  usecopy 1 /* last_known_copy_id */\n" +
      "  goto p3 /* last_known_page */\n" +
      "  goto start/* first page - Dead code unless you delete the prior goto. */\n\n" +
      original_model;
