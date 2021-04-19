@@ -4,8 +4,8 @@ Forms:
 - Display a list form copies.
 
 GUI:
-- Create a page footer that renders on the botton of every page.
-  - Make the navigation and developer buttons explicit: NextPage, PrevPage, Developer
+- Make the navigation and developer buttons explicit: NextPage, PrevPage, Developer
+- Store the model in it's form so it doesn't get garbage collected early.
 
 Language:
 - Create if statements.
@@ -21,6 +21,7 @@ IDE features:
 - Put line numbers in the Developer text box.
 - Make parse time error messages show up in the Developer text box in red comments.
 - Make run time error messages show in an alert box. Maybe?
+- Create a graphical designer that creates interview code.
 
 Tutorial
 - Split the Tutorial into separate pages with small bits of the model in each page.

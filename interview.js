@@ -837,7 +837,7 @@ interview.SaveState = function(model) {
   var original_first_page = interview.FindFirstPage(model);
   // TODO: Check if original first page is already an older restore page?
   var save_page_name = interview.GetSavePageName(model.dev_mode_start_time);
-  var save_page = "page " + save_page_name + "\n";
+  var save_page = "\npage " + save_page_name + "\n";
   for (var form_name in model.form_info) {
     save_page += "  form " + form_name + "\n";
     interview.SetForm(model, form_name);
@@ -847,6 +847,9 @@ interview.SaveState = function(model) {
       interview.UseCopyId(model, copy_id);
       save_page += interview.DataToFormula(model);
       copy_id = model.form_copy_info[form_name][copy_id].next_id;
+      if (copy_id >= 0) {
+        save_page += "  newcopy\n";
+      }
     }
   }
   save_page += "  form " + last_known_form + " /* last_known_form */\n";

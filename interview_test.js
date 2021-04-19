@@ -1367,31 +1367,37 @@ DefineTest("TestGetTextIndexOfPage").func = function() {
   EXPECT_EQ(idx, 212);
 }
 DefineTest("TestSaveState").func = function() {
-  var original_model = "page start form foo x = 7;\n" +
-                       "page p2 newcopy x = \"hello\"; goto p3\n" +
-                       "page p3\n";
+  var original_model = "page p1 form foo usecopy 0 x = \"goodbye\";\n" +
+                       "page p2 form foo newcopy usecopy 1 x = \"hello\";\n" +
+                       "page stop\n" +
+                       "page p3 usecopy 0 print x\n" +
+                       "page p4 usecopy 1 print x\n";
   var model = Parse(original_model);
   var form = document.createElement("form");
   document.body.appendChild(form);
   RenderModel(model, form);
+  EXPECT_EQ(interview.GetFormCopyId(model), 0)
   model.GoToPage("p2");
+  EXPECT_EQ(interview.GetFormCopyId(model), 1)
+  model.GoToPage("stop");
+  EXPECT_EQ(interview.GetFormCopyId(model), 1)
   interview.DeveloperMode(model);
-  // hack to make the test reproducible
   model.dev_mode_start_time = new Date("2021-04-17T13:51:03");
   interview.SaveState(model);
   var text=document.getElementById(model.dev_mode_textbox).value;
   var expected_model_1 = 
-     "page Restore_from_2021_04_17_at_13_51_03\n" +
+     "\npage Restore_from_2021_04_17_at_13_51_03\n" +
      "  form scratch\n" +
      "  internal_resetcopyid 0\n" +
      "  form foo\n" +
      "  internal_resetcopyid 0\n" +
-     "  x = 7;\n" +
+     "  x = \"goodbye\";\n" +
+     "  newcopy\n" +
      "  internal_resetcopyid 1\n" +
      "  x = \"hello\";\n" +
      "  form foo /* last_known_form */\n" +
      "  usecopy 1 /* last_known_copy_id */\n" +
-     "  goto p3 /* last_known_page */\n\n" +
+     "  goto stop /* last_known_page */\n\n" +
      original_model;
   EXPECT_EQ(text, expected_model_1);
   interview.SaveState(model);
@@ -1399,6 +1405,10 @@ DefineTest("TestSaveState").func = function() {
   EXPECT_EQ(text, expected_model_1);
 
   model = interview.Reload(model);
+  model.GoToPage("p3");
+  EXPECT_SUBSTR(form.innerHTML, "goodbye");
+  model.GoToPage("p4");
+  EXPECT_SUBSTR(form.innerHTML, "hello");
   interview.DeveloperMode(model);
   interview.SaveState(model);
   interview.SaveState(model);
