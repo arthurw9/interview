@@ -1,7 +1,6 @@
 Forms:
 - Delete form copy
 - Get values from a different form and/or copy.
-- Display a list form copies.
 
 GUI:
 - Make the navigation and developer buttons explicit: NextPage, PrevPage, Developer

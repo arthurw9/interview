@@ -1,6 +1,6 @@
 function FAIL(msg) {
   console.log(current_test_name);
-  console.trace("ERROR: " + msg);
+  console.trace("ERROR: ", msg);
 }
 function EXPECT_EQ(a, b) {
   if (a==b) return;
@@ -53,6 +53,14 @@ function RunTestsRandomly() {
   }
   console.log("Testing: DONE");
   console.log("Testing: " + Object.keys(tests).length + " tests");
+}
+function RunTest(name) {
+  current_test_name = name;
+  try {
+    tests[name].func();
+  } catch(err) {
+    FAIL(err);
+  }
 }
 function TokenizeForTest(str) {
   var model = {};
@@ -286,7 +294,7 @@ DefineTest("TestCleanTokens").func = function() {
   model.text = text;
   interview.Tokenize(model);
   EXPECT_EQ(model.tokens.length, 14);
-  CleanTokens(model);
+  interview.CleanTokens(model);
   var tokens = model.tokens;
   EXPECT_EQ(tokens.length, 6);
   var idx = 0;
@@ -658,6 +666,15 @@ DefineTest("TestTokenizeKeywords").func = function() {
   EXPECT_EQ(tokens[0][1], 0);
   EXPECT_EQ(tokens[0][2], 6);
   EXPECT_EQ("button", str.substr(tokens[0][1], tokens[0][2]));
+
+  str = "_id";
+  EXPECT_EQ(str, interview.COPYID_KEYWORD);
+  tokens = TokenizeForTest(str);
+  EXPECT_EQ(tokens.length, 1);
+  EXPECT_EQ(tokens[0][0], "_id");
+  EXPECT_EQ(tokens[0][1], 0);
+  EXPECT_EQ(tokens[0][2], 3);
+  EXPECT_EQ("_id", str.substr(tokens[0][1], tokens[0][2]));
 }
 DefineTest("TestDefaultNavigation").func = function() {
   var model = Parse(
@@ -1476,6 +1493,46 @@ DefineTest("TestResetFormCopyId").func = function() {
   EXPECT_EQ(interview.GetNumFormCopies(model), 3);
   // For manual testing, don't remove the form element.
   form.remove();
+}
+DefineTest("TestSelect").func = function() {
+  var str = "page initialize\n" +
+    "  form foo\n" +
+    "  x = \"Hello A\";\n" +
+    "  newcopy\n" +
+    "  x = \"Hello B\";\n" +
+    "  newcopy\n" +
+    "  x = \"Hello C\";\n" +
+    "  prevcopy\n" +
+    "  goto main\n" +
+    "\n" +
+    "page up\n" +
+    "  prevcopy\n" +
+    "  goto main\n" +
+    "\n" +
+    "page down\n" +
+    "  nextcopy\n" +
+    "  goto main\n" +
+    "\n" +
+    "page main\n" +
+    "  form foo\n" +
+    "  select \"&nbsp;\" + _id + \"&nbsp;\", x," +
+    "         _id + 7, \"foo-\" + _id, 2* 11 - _id;\n" +
+    "  button up\n" +
+    "  button down\n" +
+    "  print x\n";
+  var model = Parse(str);
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  RenderModel(model, form);
+  model.GoToPage("up");
+  model.GoToPage("up");
+  model.GoToPage("down");
+  model.GoToPage("down");
+  model.GoToPage("down");
+  model.GoToPage("down");
+  // TODO: Verify some data.
+  // For manual testing, don't remove the form element.
+  // form.remove();
 }
 RunTestsRandomly();
 

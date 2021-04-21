@@ -54,6 +54,9 @@ interview.GetDataObj = function(model) {
 interview.GetFormCopyId = function(model) {
   return model.form_info[model.curr_form].curr_id;
 }
+interview.GetAllCopyIds = function(model) {
+  return Object.keys(model.form_copy_info[model.curr_form]);
+}
 interview.GetNextCopyId = function(model) {
   var form_name = model.curr_form;
   var form_id = model.form_info[form_name].curr_id;
@@ -117,7 +120,7 @@ interview.DeleteFormCopy = function(model) {
 interview.UseCopyId = function(model, new_id) {
   var form_name = model.curr_form;
   var form_info = model.form_info[form_name];
-  form_info.curr_id = new_id;
+  form_info.curr_id = Number(new_id);
   model.data = interview.GetDataObj(model);
 }
 interview.ResetCopyId = function(model, expr, new_id) {
@@ -201,6 +204,10 @@ interview.CheckUnique = function(item) {
 interview.KEYWORDS = [];
 interview.CheckUniqueKeyword = function(kwd) {
   interview.CheckUnique(kwd);
+  if (interview.KEYWORDS.find(
+         existing => (existing.startsWith(kwd) || kwd.startsWith(existing)))) {
+    throw "ERROR: keywords cannot start with each other: " + kwd;
+  }
   interview.KEYWORDS.push(kwd);
   return kwd;
 }
@@ -215,6 +222,8 @@ interview.NEWCOPY_KEYWORD = interview.CheckUniqueKeyword("newcopy");
 interview.NEXTCOPY_KEYWORD = interview.CheckUniqueKeyword("nextcopy");
 interview.PREVCOPY_KEYWORD = interview.CheckUniqueKeyword("prevcopy");
 interview.USECOPY_KEYWORD = interview.CheckUniqueKeyword("usecopy");
+interview.SELECT_KEYWORD = interview.CheckUniqueKeyword("select");
+interview.COPYID_KEYWORD = interview.CheckUniqueKeyword("_id");
 // This is an internal keyword for restoring state.
 interview.SETCOPYID_KEYWORD = interview.CheckUniqueKeyword("internal_resetcopyid");
 
@@ -238,7 +247,8 @@ interview.Tokenize = function(model) {
   var IDENTIFIER_1 = /[a-zA-Z_]/;
   var IDENTIFIER_2 = /[a-zA-Z_0-9]/;
 
-  var tokens = [];  // list of tokens [type, start_idx, len]
+  // list of tokens [type, start_idx, len]
+  var tokens = [];
   var idx = 0;
   var text = model.text;
   while (idx < text.length) {
@@ -350,7 +360,7 @@ interview.Tokenize = function(model) {
   }
   model.tokens = tokens;
 }
-function CleanTokens(model) {
+interview.CleanTokens = function(model) {
   // Drop whitespace and comments.
   var tokens = model.tokens;
   var clean_tokens = [];
@@ -376,7 +386,7 @@ function TokenString(model, idx) {
   return model.text.substr(model.tokens[idx][1],
                            model.tokens[idx][2]);
 }
-function TokenToNode(model) {
+interview.TokenToNode = function(model) {
   var node = {};
   node.type = TokenType(model, model.token_idx);
   node.token = model.tokens[model.token_idx];
@@ -386,10 +396,7 @@ function TokenToNode(model) {
   if (node.type == interview.NUMBER_TOKEN) {
     node.right = Number(TokenString(model, model.token_idx));
   }
-  if (node.type == interview.STRING_TOKEN) {
-    node.right = String(TokenString(model, model.token_idx));
-  }
-  if (node.type == interview.IDENTIFIER_TOKEN) {
+  if ([interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN].includes(node.type)) {
     node.right = String(TokenString(model, model.token_idx));
   }
   model.token_idx += 1;
@@ -403,7 +410,10 @@ function AppendBelowRight(node, new_node) {
     new_node.left.parent = new_node;
   }
 }
-function HandleNewNode(model, curr, new_node) {
+// Adds new_node to the parse tree in the right place.
+// curr is the last node that was added to the tree.
+// Returns the node that should be treated like the last node in the next iteration.
+interview.HandleNewNode = function(model, curr, new_node) {
   var objects;
   var operators;
   // One word statements
@@ -414,17 +424,61 @@ function HandleNewNode(model, curr, new_node) {
       return new_node;
     }
   }
-  // First word of two word statements
+  // First word of multi word statements
   if ([interview.START].includes(curr.type)) {
     if ([interview.FORM_KEYWORD, interview.PAGE_KEYWORD, interview.PRINT_KEYWORD,
          interview.BUTTON_KEYWORD, interview.INPUT_KEYWORD, interview.GOTO_KEYWORD,
-         interview.SETCOPYID_KEYWORD, interview.USECOPY_KEYWORD].includes(new_node.type)) {
+         interview.SETCOPYID_KEYWORD, interview.USECOPY_KEYWORD, interview.SELECT_KEYWORD
+         ].includes(new_node.type)) {
       if (interview.GOTO_KEYWORD == new_node.type && Object.keys(model.pages).length == 0) {
         interview.ParseError("Cannot use the goto keyword in the model header.",
                    new_node.token, model);
       }
+      if (new_node.type == interview.SELECT_KEYWORD) {
+        new_node.columns = [];
+      }
       AppendBelowRight(curr, new_node);
       return new_node;
+    }
+  }
+  // Select columns
+  if (interview.SELECT_KEYWORD == curr.type) {
+    if ([interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN,
+         interview.NUMBER_TOKEN, interview.COPYID_KEYWORD, "("
+         ].includes(new_node.type)) {
+      // Columns can have expressions so we use a fake open paren to contain it.
+      // The fake paren lets the existing expression parsing code work. 
+      // We close the paren once we get a comma or a semicolon.
+      var fake_parenthesis_object = {};
+      Object.assign(fake_parenthesis_object, new_node);
+      fake_parenthesis_object.type = "(";
+      fake_parenthesis_object.parent = curr;
+      curr.columns.push(fake_parenthesis_object);
+      fake_parenthesis_object.column_idx = curr.columns.length - 1;
+      AppendBelowRight(fake_parenthesis_object, new_node);
+      return new_node;
+    }
+    interview.ParseError("Unexpected " + new_node.type + " after " +
+               curr.type+ ".",
+               model.tokens[model.first_token_idx],
+               model);
+  }
+  // We need to check if this is the end of a select column
+  if ([",", interview.SEMICOLON_TOKEN].includes(new_node.type)) {
+    var pointer = curr;
+    while (![interview.START, "("].includes(pointer.type)) {
+      pointer = pointer.parent;
+    }
+    if (pointer.hasOwnProperty("parent") && pointer.parent.hasOwnProperty("type") &&
+        pointer.parent.type == interview.SELECT_KEYWORD) {
+      pointer.type = "()";
+      interview.ValidateExpression(model, pointer);
+      if (interview.SEMICOLON_TOKEN == new_node.type) {
+        model.expression_end = true;
+      }
+      // return the select statment node so the next expression
+      // can start a new column.
+      return pointer.parent;
     }
   }
   // Second word of two word statements
@@ -491,14 +545,16 @@ function HandleNewNode(model, curr, new_node) {
     }
   }
   operators = ["+", "-", "*", "/", interview.START, "(", "="];
-  objects = [interview.NUMBER_TOKEN, "(", interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN];
+  objects = [interview.NUMBER_TOKEN, "(", interview.STRING_TOKEN,
+             interview.IDENTIFIER_TOKEN, interview.COPYID_KEYWORD];
   if (operators.includes(curr.type)) {
     if (objects.includes(new_node.type)) {
       AppendBelowRight(curr, new_node);
       return new_node;
     }
   }
-  objects = [interview.NUMBER_TOKEN, "()", interview.IDENTIFIER_TOKEN];
+  objects = [interview.NUMBER_TOKEN, "()", 
+             interview.IDENTIFIER_TOKEN, interview.COPYID_KEYWORD];
   if (objects.includes(curr.type)) {
     if (["*", "/"].includes(new_node.type)) {
       var stuff_to_skip = objects.concat(["*", "/"]);
@@ -532,9 +588,14 @@ function HandleNewNode(model, curr, new_node) {
              new_node.token, model);
   return new_node;
 }
-function ValidateExpression(model, expr) {
+// throw an error if expr is bad.
+interview.ValidateExpression = function(model, expr) {
   if (expr == undefined) {
     interview.ParseErrorPriorToken("Unexpected empty expression.", model);
+  }
+  if (expr.type == interview.SELECT_KEYWORD) {
+    // validation was already performed on each column.
+    return;
   }
   // TODO: Should we check that left and right are empty?
   if ([interview.NEWCOPY_KEYWORD, interview.NEXTCOPY_KEYWORD,
@@ -571,21 +632,21 @@ function ValidateExpression(model, expr) {
     if (expr.left == undefined) {
       interview.ParseError("Unexpected missing left operand.", expr.token, model);
     }
-    ValidateExpression(model, expr.left);
+    interview.ValidateExpression(model, expr.left);
     if (expr.right == undefined) {
       interview.ParseError("Unexpected missing right operand.", expr.token, model);
     }
-    ValidateExpression(model, expr.right);
+    interview.ValidateExpression(model, expr.right);
     return;
   }
   if (expr.type == "()") {
-    ValidateExpression(model, expr.right);
+    interview.ValidateExpression(model, expr.right);
     return;
   }
   if (expr.type == "(") {
     interview.ParseError("Unmatched parentheses.", expr.token, model);
   }
-  if (expr.type == interview.IDENTIFIER_TOKEN) {
+  if ([interview.IDENTIFIER_TOKEN, interview.COPYID_KEYWORD].includes(expr.type)) {
     // TODO: should we check anything here?
     return;
   }
@@ -598,11 +659,11 @@ function ParseExpression(model) {
   model.expression_end = false;
   while (model.token_idx < model.tokens.length &&
          !model.expression_end) {
-    var new_node = TokenToNode(model);
-    curr = HandleNewNode(model, curr, new_node);
+    var new_node = interview.TokenToNode(model);
+    curr = interview.HandleNewNode(model, curr, new_node);
   }
   var expr = start.right;
-  ValidateExpression(model, expr);
+  interview.ValidateExpression(model, expr);
   return expr;
 }
 function ExpressionDebugString(model, expr) {
@@ -679,6 +740,9 @@ function Evaluate(model, expr) {
     var identifier = expr.right;
     return model.data[identifier];
   }
+  if (expr.type == interview.COPYID_KEYWORD) {
+    return interview.GetFormCopyId(model);
+  }
   if (expr.type == "=") {
     var identifier = expr.left.right;
     var value = Evaluate(model, expr.right);
@@ -722,6 +786,27 @@ function RenderExpression(model, expr) {
     var destination_page = String(expr.right.right);
     var str = "<button type='button' onclick='model.GoToPage(\"" +
               destination_page + "\")'>" + destination_page + "</button>";
+    return str;
+  }
+  if (expr.type == interview.SELECT_KEYWORD) {
+    var original_copy_id = interview.GetFormCopyId(model);
+    str = "<table border=1 cellpadding=0 cellspacing=0>";
+    for (var copy_id in interview.GetAllCopyIds(model)) {
+      if (copy_id == original_copy_id) {
+        str += "<tr bgcolor=yellow>";
+      } else {
+        str += "<tr>";
+      }
+      interview.UseCopyId(model, copy_id);
+      for (var i in expr.columns) {
+        str += "<td>";
+        str += Evaluate(model, expr.columns[i]);
+        str += "</td>";
+      }
+      str += "</tr>";
+    }
+    str += "</table>";
+    interview.UseCopyId(model, original_copy_id);
     return str;
   }
   if (expr.type == interview.INPUT_KEYWORD) {
@@ -1056,8 +1141,9 @@ interview.FindFirstPage = function(model) {
 function Parse(text) {
   var model = interview.GetEmptyModel(text);
   interview.Tokenize(model);
-  CleanTokens(model);
+  interview.CleanTokens(model);
   while (model.token_idx < model.tokens.length) {
+    // First token of the expression currently being parsed.
     model.first_token_idx = model.token_idx;
     var expr = ParseExpression(model);
     var last_token_idx = model.token_idx - 1;
