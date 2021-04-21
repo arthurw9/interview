@@ -23,32 +23,23 @@ function EXPECT_NOT_SUBSTR(haystack, needle) {
     console.trace("ERROR: Contains unexpected substring [", needle, "]: [", haystack, "]");
   }
 }
-var tests = [];
+var tests = {};
 var current_test_name = "";
 function DefineTest(name) {
   var t = {};
-  t.name = name,
-  tests.push(t);
-  return t;
-}
-function RunTestsInOrder() {
-  console.log("Testing: START");
-  for(var i = 0; i < tests.length; i++) {
-    current_test_name = tests[i].name;
-    try {
-      tests[i].func();
-    } catch(err) {
-      FAIL(err);
-    }
+  if (tests.hasOwnProperty(name)) {
+    current_test_name = name;
+    FAIL("There is already a test named: " + name);
   }
-  console.log("Testing: DONE");
-  console.log("Testing: " + tests.length + " tests");
+  t.name = name;
+  tests[name] = t;
+  return t;
 }
 function RunTestsRandomly() {
   console.log("Testing: START");
   var tests_to_run = [];
-  for(var i = 0; i < tests.length; i++) {
-    tests_to_run[i] = tests[i];
+  for(var name in tests) {
+    tests_to_run.push(tests[name]);
   }
   while(tests_to_run.length > 0) {
     var i = Math.floor(Math.random() * tests_to_run.length);
@@ -61,7 +52,7 @@ function RunTestsRandomly() {
     }
   }
   console.log("Testing: DONE");
-  console.log("Testing: " + tests.length + " tests");
+  console.log("Testing: " + Object.keys(tests).length + " tests");
 }
 function TokenizeForTest(str) {
   var model = {};
