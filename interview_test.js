@@ -1394,7 +1394,7 @@ DefineTest("TestSaveState").func = function() {
   interview.SaveState(model);
   var text=document.getElementById(model.dev_mode_textbox).value;
   var expected_model_1 = 
-     "\npage Restore_from_2021_04_17_at_13_51_03\n" +
+     "page Restore_from_2021_04_17_at_13_51_03\n" +
      "  form scratch\n" +
      "  internal_resetcopyid 0\n" +
      "  form foo\n" +
@@ -1532,7 +1532,7 @@ DefineTest("TestSelect").func = function() {
   model.GoToPage("down");
   // TODO: Verify some data.
   // For manual testing, don't remove the form element.
-  // form.remove();
+  form.remove();
 }
 RunTestsRandomly();
 

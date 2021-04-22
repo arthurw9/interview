@@ -817,6 +817,12 @@ function RenderExpression(model, expr) {
         } else {
           model.data[elem.name] = elem.value;
         }
+        // Refresh the current page.
+        // TODO: If the developer adds a footer with GOTO then
+        // this code is broken. We need to give the developer
+        // a way to say what page should be refreshed.
+        // Maybe with gosub? lol.
+        model.GoToPage(model.current_page);
       }
     }
     var identifier_name = expr.right.right;
@@ -922,7 +928,7 @@ interview.SaveState = function(model) {
   var original_first_page = interview.FindFirstPage(model);
   // TODO: Check if original first page is already an older restore page?
   var save_page_name = interview.GetSavePageName(model.dev_mode_start_time);
-  var save_page = "\npage " + save_page_name + "\n";
+  var save_page = "page " + save_page_name + "\n";
   for (var form_name in model.form_info) {
     save_page += "  form " + form_name + "\n";
     interview.SetForm(model, form_name);
@@ -941,6 +947,10 @@ interview.SaveState = function(model) {
   save_page += "  usecopy " + last_know_form_copy + " /* last_known_copy_id */\n";
   save_page += "  goto " + last_known_page + " /* last_known_page */\n\n";
   var char_idx = interview.GetTextIndexOfPage(model, original_first_page);
+  while (char_idx > 0 && /\s/.test(model.text[char_idx - 1]) &&
+         !["\n", "\r"].includes(model.text[char_idx - 1])) {
+    char_idx -= 1;
+  }
   var prefix = model.text.substr(0, char_idx);
   var suffix = model.text.substr(char_idx);
   var new_model_text = prefix + save_page + suffix;
