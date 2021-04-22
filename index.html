@@ -20,6 +20,32 @@ LoadScript("interview.js").onload = function() {
     "button Home\n" +
     "print \"\"\n" +
     " \n" +
+    "page Restore_from_2021_04_21_at_20_22_14\n" +
+    "  form scratch\n" +
+    "  internal_resetcopyid 0\n" +
+    "  form Interview\n" +
+    "  internal_resetcopyid 0\n" +
+    "  form select_demo\n" +
+    "  internal_resetcopyid 0\n" +
+    "  name = \"Arthur\";\n" +
+    "  favorite_food = \"ants on a log\";\n" +
+    "  newcopy\n" +
+    "  internal_resetcopyid 1\n" +
+    "  name = \"Barry\";\n" +
+    "  favorite_food = \"beans\";\n" +
+    "  newcopy\n" +
+    "  internal_resetcopyid 2\n" +
+    "  name = \"Carl\";\n" +
+    "  favorite_food = \"carrots\";\n" +
+    "  newcopy\n" +
+    "  internal_resetcopyid 3\n" +
+    "  name = \"David\";\n" +
+    "  favorite_food = \"dates\";\n" +
+    "  usecopy 2\n" +
+    "  form Interview /* last_known_form */\n" +
+    "  usecopy 0 /* last_known_copy_id */\n" +
+    "  goto Home /* last_known_page */\n" +
+    "\n" +
     "page Home\n" +
     "  print \"<h1>Interview</h1>\"\n" +
     "  print \"A simple language to build interview style apps.\"\n" +
@@ -84,6 +110,8 @@ LoadScript("interview.js").onload = function() {
     "  button Form_Keyword\n" +
     "  print \"\"\n" +
     "  button Form_Copies\n" +
+    "  print \"\"\n" +
+    "  button select_keyword\n" +
     "\n" +
     "page Page_Keyword\n" +
     "  print \"<h1>Page Keyword</h1>\"\n" +
@@ -342,7 +370,34 @@ LoadScript("interview.js").onload = function() {
     "  button Modify_Some_Variables\n" +
     "  button Print_Some_Variables\n" +
     "  button Input_Some_Variables\n" +
-    "  \n";
+    "\n" +
+    "page newcopy_select_keyword\n" +
+    "  form select_demo\n" +
+    "  newcopy\n" +
+    "  goto select_keyword\n" +
+    "\n" +
+    "page prevcopy_select_keyword\n" +
+    "  form select_demo\n" +
+    "  prevcopy\n" +
+    "  goto select_keyword\n" +
+    "\n" +
+    "page nextcopy_select_keyword\n" +
+    "  form select_demo\n" +
+    "  nextcopy\n" +
+    "  goto select_keyword\n" +
+    "  \n" +
+    "page select_keyword\n" +
+    "  form select_demo  \n" +
+    "  select name + \" likes&nbsp;\", favorite_food + \" a lot.\";\n" +
+    "  button newcopy_select_keyword\n" +
+    "  print \"\"\n" +
+    "  button prevcopy_select_keyword\n" +
+    "  button nextcopy_select_keyword\n" +
+    "\n" +
+    "  print \"name\"\n" +
+    "  input name\n" +
+    "  print \"favorite_food\"\n" +
+    "  input favorite_food\n";
   var model = Parse(str);
   var interview = document.getElementById("interview");
   RenderModel(model, interview);

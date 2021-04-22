@@ -924,14 +924,14 @@ interview.SaveState = function(model) {
   }
   var last_known_page = model.current_page;
   var last_known_form = model.curr_form;
-  var last_know_form_copy = interview.GetFormCopyId(model);
   var original_first_page = interview.FindFirstPage(model);
   // TODO: Check if original first page is already an older restore page?
   var save_page_name = interview.GetSavePageName(model.dev_mode_start_time);
   var save_page = "page " + save_page_name + "\n";
   for (var form_name in model.form_info) {
-    save_page += "  form " + form_name + "\n";
     interview.SetForm(model, form_name);
+    var last_know_form_copy = interview.GetFormCopyId(model);
+    save_page += "  form " + form_name + "\n";
     var copy_id = model.form_info[form_name].first_id;
     while(copy_id >= 0) {
       save_page += "  internal_resetcopyid " + copy_id + "\n";
@@ -942,9 +942,9 @@ interview.SaveState = function(model) {
         save_page += "  newcopy\n";
       }
     }
+    save_page += "  usecopy " + last_know_form_copy + " /* last_known_copy_id */\n";
   }
   save_page += "  form " + last_known_form + " /* last_known_form */\n";
-  save_page += "  usecopy " + last_know_form_copy + " /* last_known_copy_id */\n";
   save_page += "  goto " + last_known_page + " /* last_known_page */\n\n";
   var char_idx = interview.GetTextIndexOfPage(model, original_first_page);
   while (char_idx > 0 && /\s/.test(model.text[char_idx - 1]) &&

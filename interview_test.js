@@ -1397,14 +1397,15 @@ DefineTest("TestSaveState").func = function() {
      "page Restore_from_2021_04_17_at_13_51_03\n" +
      "  form scratch\n" +
      "  internal_resetcopyid 0\n" +
+     "  usecopy 0 /* last_known_copy_id */\n" +
      "  form foo\n" +
      "  internal_resetcopyid 0\n" +
      "  x = \"goodbye\";\n" +
      "  newcopy\n" +
      "  internal_resetcopyid 1\n" +
      "  x = \"hello\";\n" +
-     "  form foo /* last_known_form */\n" +
      "  usecopy 1 /* last_known_copy_id */\n" +
+     "  form foo /* last_known_form */\n" +
      "  goto stop /* last_known_page */\n\n" +
      original_model;
   EXPECT_EQ(text, expected_model_1);
