@@ -745,6 +745,47 @@ function Evaluate(model, expr) {
   }
   interview.ParseError("Unexpected token during Evaluation.", expr.token, model);
 }
+interview.AddInitializer = function(model, initializer) {
+  if (!model.initializer_list) {
+    model.initializer_list = [];
+  }
+  model.initializer_list.push(initializer);
+}
+interview.RenderSelect = function(model, select_expr) {
+  var original_copy_id = interview.GetFormCopyId(model);
+  str = "<style>tr:hover td { background-color: yellow; cursor: pointer; } ";
+  str += "tr:active td { background-color: red; }";
+  str += "tr[selected] { background-color: yellow; }";
+  str += "table {table-layout: fixed; td, th { overflow: hidden; white-space: nowrap; } }";
+  str += "</style>";
+  str += "<table border=1>";
+  for (let copy_id in interview.GetAllCopyIds(model)) {
+    let rid = interview.RandomIdentifier("r_");
+    str += "<tr id=" + rid;
+    if (copy_id == original_copy_id) {
+      str += " selected";
+    }
+    str += ">";
+    let f = function() { 
+      interview.UseCopyId(model, copy_id);
+      // TODO: current_page might not work if there is a goto.
+      // We need a better solution.
+      model.GoToPage(model.current_page);
+    }
+    interview.AddInitializer(model, function() { 
+      document.getElementById(rid).onclick = f; });
+    interview.UseCopyId(model, copy_id);
+    for (var i in select_expr.columns) {
+      str += "<td>";
+      str += Evaluate(model, select_expr.columns[i]);
+      str += "</td>";
+    }
+    str += "</tr>";
+  }
+  str += "</table>";
+  interview.UseCopyId(model, original_copy_id);
+  return str;
+}
 function RenderExpression(model, expr) {
   if (expr.type == interview.PRINT_KEYWORD) {
     return "<p>" + Evaluate(model, expr.right) + "</p>";
@@ -756,27 +797,7 @@ function RenderExpression(model, expr) {
     return str;
   }
   if (expr.type == interview.SELECT_KEYWORD) {
-    var original_copy_id = interview.GetFormCopyId(model);
-    str = "<table border=1 cellpadding=0 cellspacing=0>";
-    for (var copy_id in interview.GetAllCopyIds(model)) {
-      // TODO: Make table row hover yellowish under the mouse.
-      // TODO: Make copy_id change if the row is clicked.
-      if (copy_id == original_copy_id) {
-        str += "<tr bgcolor=yellow>";
-      } else {
-        str += "<tr>";
-      }
-      interview.UseCopyId(model, copy_id);
-      for (var i in expr.columns) {
-        str += "<td>";
-        str += Evaluate(model, expr.columns[i]);
-        str += "</td>";
-      }
-      str += "</tr>";
-    }
-    str += "</table>";
-    interview.UseCopyId(model, original_copy_id);
-    return str;
+    return interview.RenderSelect(model, expr);
   }
   if (expr.type == interview.INPUT_KEYWORD) {
     if (!model.Read) {
@@ -799,11 +820,10 @@ function RenderExpression(model, expr) {
     // TODO: Need to verify:
     // The same identifier should not be input more than once on a page.
     if (model.data.hasOwnProperty(identifier_name)) {
-      if (!model.InitializerList) {
-        model.InitializerList = [];
-      }
       var current_value = Evaluate(model, expr.right);
-      model.InitializerList.push({id:id, value:current_value});
+      interview.AddInitializer(
+         model,
+         function() { document.getElementById(id).value = current_value; });
     }
     return str;
   }
@@ -1087,14 +1107,10 @@ interview.RenderModel = function(model, html_form) {
   var form_idx = "[" + interview.GetFormCopyId(model) + "]";
   str += "<p>Form: " + model.curr_form + form_idx + " Page: " + model.current_page + "</p>"
   model.html_form.innerHTML = str;
-  while (true) {
-    if (!model.InitializerList || model.InitializerList.length == 0) {
-      break;
-    }
-    var initializer = model.InitializerList.pop();
-    var elem = document.getElementById(initializer.id);
-    elem.value = initializer.value;
+  for(var i in model.initializer_list) {
+    model.initializer_list[i]();
   }
+  model.initializer_list = [];
 }
 function RunModel(model) {
   for (var i = 0; i < model.expression_list.length; ++i) {
