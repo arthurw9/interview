@@ -4,7 +4,6 @@ Forms:
 
 GUI:
 - Make the navigation and developer buttons explicit: NextPage, PrevPage, Developer
-- Store the model in it's form so it doesn't get garbage collected early.
 
 Language:
 - Create if statements.

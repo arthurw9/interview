@@ -323,7 +323,7 @@ DefineTest("TestCleanTokens").func = function() {
   EXPECT_EQ(tokens[idx][2], 1);
 }
 DefineTest("TestParseAndRunAssignments").func = function() {
-  var model = Parse("x = \"hello world\";");
+  var model = interview.Parse("x = \"hello world\";");
   EXPECT_EQ(model.expression_list.length, 1);
   EXPECT_EQ(model.expression_list[0].first_token_idx, 0);
   EXPECT_EQ(model.expression_list[0].last_token_idx, 3);
@@ -332,7 +332,7 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], "hello world");
 
-  model = Parse("x = 1; y = 2;");
+  model = interview.Parse("x = 1; y = 2;");
   EXPECT_EQ(model.expression_list.length, 2);
   EXPECT_EQ(model.expression_list[0].first_token_idx, 0);
   EXPECT_EQ(model.expression_list[0].last_token_idx, 3);
@@ -347,11 +347,11 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   EXPECT_EQ(model.data["y"], 2);
 
   // TODO: Should we require a semicolon for the last expression?
-  model = Parse(" /* irrelevant */ x = \"doesn't need a ; lol\"");
+  model = interview.Parse(" /* irrelevant */ x = \"doesn't need a ; lol\"");
   expr = model.expression_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr), "x \"doesn't need a ; lol\" =");
 
-  model = Parse("x = 13;");
+  model = interview.Parse("x = 13;");
   expr = model.expression_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr), "x 13 =");
   EXPECT_EQ(expr.type, "=");
@@ -364,7 +364,7 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], 13);
 
-  model = Parse("x = 1 + 2 + 3;");
+  model = interview.Parse("x = 1 + 2 + 3;");
   expr = model.expression_list[0].expression;
   EXPECT_EQ(ExpressionDebugString(model, expr), "x 1 2 + 3 + =");
   EXPECT_EQ(expr.type, "=");
@@ -382,7 +382,7 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], 6);
 
-  model = Parse("x = 10 - 2 - 4;");
+  model = interview.Parse("x = 10 - 2 - 4;");
   EXPECT_EQ(model.token_idx, 8);
   expr = model.expression_list[0].expression;
   EXPECT_EQ(expr.type, "=");
@@ -400,7 +400,7 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], 4);
 
-  model = Parse("x = 2 * 4 * 9;");
+  model = interview.Parse("x = 2 * 4 * 9;");
   expr = model.expression_list[0].expression;
   EXPECT_EQ(expr.type, "=");
   expr = expr.right;
@@ -409,21 +409,21 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], 72);
 
-  model = Parse("x = 64 / 4 / 2;");
+  model = interview.Parse("x = 64 / 4 / 2;");
   expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr), "64 4 / 2 /");
   EXPECT_EQ(Evaluate(model, expr), 8);
   RunModel(model);
   EXPECT_EQ(model.data["x"], 8);
 
-  model = Parse("x = 1 + 4 * 9 / 2 - 5;");
+  model = interview.Parse("x = 1 + 4 * 9 / 2 - 5;");
   expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr), "1 4 9 * 2 / + 5 -");
   EXPECT_EQ(Evaluate(model, expr), 14);
   RunModel(model);
   EXPECT_EQ(model.data["x"], 14);
 
-  model = Parse("x = (((6 - 2 -2)));");
+  model = interview.Parse("x = (((6 - 2 -2)));");
   expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "6 2 - 2 -");
@@ -431,7 +431,7 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], 2);
 
-  model = Parse("x = 1 + (1 + 3) * 3 / 2 / 2;");
+  model = interview.Parse("x = 1 + (1 + 3) * 3 / 2 / 2;");
   expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "1 1 3 + 3 * 2 / 2 / +");
@@ -439,7 +439,7 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], 4);
 
-  model = Parse("x = (11 * 5 - 50);");
+  model = interview.Parse("x = (11 * 5 - 50);");
   expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "11 5 * 50 -");
@@ -447,7 +447,7 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   RunModel(model);
   EXPECT_EQ(model.data["x"], 5);
 
-  model = Parse("x = (6 - 2 -2) * (1 + (1 + 3) * 3 / 2 / 2) - (11 * 5 - 50);");
+  model = interview.Parse("x = (6 - 2 -2) * (1 + (1 + 3) * 3 / 2 / 2) - (11 * 5 - 50);");
   expr = model.expression_list[0].expression.right;
   EXPECT_EQ(ExpressionDebugString(model, expr),
             "6 2 - 2 - 1 1 3 + 3 * 2 / 2 / + * 11 5 * 50 - -");
@@ -456,14 +456,14 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   EXPECT_EQ(model.data["x"], 3);
 }
 DefineTest("TestParseAndRunAssignmentsWithState").func = function() {
-  var model = Parse("x = 1; y = 2; x = x + y; y = y + 2; x = x * y;");
+  var model = interview.Parse("x = 1; y = 2; x = x + y; y = y + 2; x = x * y;");
   RunModel(model);
   EXPECT_EQ(model.data["x"], 12);
   EXPECT_EQ(model.data["y"], 4);
 }
 DefineTest("TestValidatingAssignments").func = function() {
   try {
-    model = Parse("/* ; blah \" foo ; \" */; x=2;");
+    model = interview.Parse("/* ; blah \" foo ; \" */; x=2;");
     FAIL("/* ; blah \" foo ; \" */; x=2; Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
@@ -472,7 +472,7 @@ DefineTest("TestValidatingAssignments").func = function() {
   }
 
   try {
-    model = Parse("/* ; blah \" foo ; \" */x=;");
+    model = interview.Parse("/* ; blah \" foo ; \" */x=;");
     FAIL("/* ; blah \" foo ; \" */x=; Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
@@ -481,7 +481,7 @@ DefineTest("TestValidatingAssignments").func = function() {
   }
 
   try {
-    model = Parse("abc = ");
+    model = interview.Parse("abc = ");
     FAIL("abc =  Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
@@ -490,7 +490,7 @@ DefineTest("TestValidatingAssignments").func = function() {
   }
 
   try {
-    model = Parse("abc = ( 3 + 4;");
+    model = interview.Parse("abc = ( 3 + 4;");
     FAIL(" =  Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
@@ -498,12 +498,12 @@ DefineTest("TestValidatingAssignments").func = function() {
         "abc = (/* Here */ 3 + 4;");
   }
 
-  model = Parse("/* Should empty expressions parse? lol */");
+  model = interview.Parse("/* Should empty expressions parse? lol */");
   EXPECT_EQ(model.expression_list.length, 0);
 }
 DefineTest("TestValidatingFormExpressions").func = function() {
   try {
-    model = Parse("Form form");
+    model = interview.Parse("Form form");
     FAIL("Form form Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
@@ -511,7 +511,7 @@ DefineTest("TestValidatingFormExpressions").func = function() {
         "F/* Here */orm form");
   }
   try {
-    model = Parse("Form");
+    model = interview.Parse("Form");
     FAIL("Form Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
@@ -520,7 +520,7 @@ DefineTest("TestValidatingFormExpressions").func = function() {
   }
 
   try {
-    model = Parse("PAGE pAgE");
+    model = interview.Parse("PAGE pAgE");
     FAIL("PAGE pAgE Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
@@ -529,7 +529,7 @@ DefineTest("TestValidatingFormExpressions").func = function() {
   }
 
   try {
-    model = Parse("PAGE");
+    model = interview.Parse("PAGE");
     FAIL("PAGE Should throw an error.");
   } catch(err) {
     EXPECT_EQ(err,
@@ -589,48 +589,48 @@ DefineTest("TestTokenizeIdDelimitedStrings").func = function() {
   EXPECT_EQ(tokens[1][2], 50);
 }
 DefineTest("TestEvaluateStrings").func = function() {
-  var model = Parse("x = \"hello world\";");
+  var model = interview.Parse("x = \"hello world\";");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "hello world");
 
-  model = Parse("x = a\"hello to a world with a \"a\";");
+  model = interview.Parse("x = a\"hello to a world with a \"a\";");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "hello to a world with a \"");
 
-  model = Parse("x = \"\";");
+  model = interview.Parse("x = \"\";");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "");
 
-  model = Parse("x = abc\"abc\";");
+  model = interview.Parse("x = abc\"abc\";");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "");
 
-  model = Parse("x = abc\"abcabc\";");
+  model = interview.Parse("x = abc\"abcabc\";");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "abc");
 
-  model = Parse("x = abc\"\"abc\";");
+  model = interview.Parse("x = abc\"\"abc\";");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "\"");
 }
 DefineTest("TestStringAddition").func = function() {
-  var model = Parse("x = \"hello \" + \"world\";");
+  var model = interview.Parse("x = \"hello \" + \"world\";");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "hello world");
 
-  model = Parse("x = 12; y = x * x; z = x + \" squared = \" + y;");
+  model = interview.Parse("x = 12; y = x * x; z = x + \" squared = \" + y;");
   RunModel(model);
   EXPECT_EQ(model.data["z"], "12 squared = 144");
 
-  model = Parse("x = \"hello\"; z = \"x=\" + x;");
+  model = interview.Parse("x = \"hello\"; z = \"x=\" + x;");
   RunModel(model);
   EXPECT_EQ(model.data["z"], "x=hello");
 
-  model = Parse("x = \"hello \" + 123 + \" there \"; x = x + x;");
+  model = interview.Parse("x = \"hello \" + 123 + \" there \"; x = x + x;");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "hello 123 there hello 123 there ");
 
-  model = Parse("x = \"hello \" + 123 + 123;");
+  model = interview.Parse("x = \"hello \" + 123 + 123;");
   RunModel(model);
   EXPECT_EQ(model.data["x"], "hello 123123");
 }
@@ -677,7 +677,7 @@ DefineTest("TestTokenizeKeywords").func = function() {
   EXPECT_EQ("_id", str.substr(tokens[0][1], tokens[0][2]));
 }
 DefineTest("TestDefaultNavigation").func = function() {
-  var model = Parse(
+  var model = interview.Parse(
       "form US1040 " +
       "form Schedule_A " +
 
@@ -695,7 +695,7 @@ DefineTest("TestDefaultNavigation").func = function() {
   );
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   EXPECT_SUBSTR(form.innerHTML, "You are at the start.");
   EXPECT_SUBSTR(form.innerHTML, "Form: US1040");
   EXPECT_SUBSTR(form.innerHTML, "Page: start");
@@ -725,10 +725,10 @@ DefineTest("TestDefaultNavigation").func = function() {
   form.remove();
 }
 DefineTest("TestDeveloperMode").func = function() {
-  var model = Parse("");
+  var model = interview.Parse("");
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   EXPECT_EQ(model.hasOwnProperty("RenderPrevPage"), false);
   EXPECT_EQ(model.hasOwnProperty("RenderNextPage"), false);
   EXPECT_EQ(model.hasOwnProperty("Reload"), false);
@@ -761,16 +761,16 @@ DefineTest("TestPrintWithData").func = function() {
     "z = \"x=\" + x;" +
     "z = z + \", s=\" + s;\n" +
     "print z\n";
-  var model = Parse(str);
+  var model = interview.Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   EXPECT_SUBSTR(form.innerHTML, "x=1, s=hello");
   // For manual testing, don't remove the form element.
   form.remove();
 }
 DefineTest("TestPageNavigation").func = function() {
-  var model = Parse(
+  var model = interview.Parse(
       "form US1040 " +
 
       "page start " +
@@ -802,7 +802,7 @@ DefineTest("TestPageNavigation").func = function() {
       "button start ");
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   EXPECT_SUBSTR(form.innerHTML, "Page: start");
   // I was expecting "\"" instead of "&quot;"
   // Might be browser dependent?
@@ -846,10 +846,10 @@ DefineTest("TestInputStatements").func = function() {
     "print z\n" +
     "print \"Now overriding line1 after printing.\"\n" +
     "print \"Now go back to start.\"\n";
-  var model = Parse(str);
+  var model = interview.Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   EXPECT_SUBSTR(form.innerHTML, "Page: enter");
   var inputs = document.getElementsByTagName('input');
   EXPECT_EQ(inputs[0].name, "line1");
@@ -903,10 +903,10 @@ DefineTest("TestRenderingRunsTheTopCodeForAllPages").func = function() {
     "\n" +
     "page two\n" +
     "  print \"did it work?\"\n";
-  var model = Parse(str);
+  var model = interview.Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   EXPECT_SUBSTR(form.innerHTML, "Page: one");
   EXPECT_SUBSTR(form.innerHTML, "11");
   EXPECT_SUBSTR(form.innerHTML, "hello");
@@ -1139,10 +1139,10 @@ DefineTest("TestBasicForms").func = function() {
     "  print line_1\n" +
     "page c\n" +
     "  print line_1\n";
-  var model = Parse(str);
+  var model = interview.Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   // There are 3 forms because there is also a default form named scratch.
   // I had to add a default form because otherwise too many unit tests
   // would break.
@@ -1182,10 +1182,10 @@ DefineTest("TestGotoKeyword").func = function() {
     "page b\n" +
     "  print \"hello b\"\n" +
     "  goto c\n";
-  var model = Parse(str);
+  var model = interview.Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   EXPECT_NOT_SUBSTR(form.innerHTML, "hello a");
   EXPECT_NOT_SUBSTR(form.innerHTML, "hello b");
   EXPECT_SUBSTR(form.innerHTML, "hello c");
@@ -1206,7 +1206,7 @@ DefineTest("TestGotoKeywordInHeader").func = function() {
     "page a\n" +
     "page b\n";
   try {
-    var model = Parse(str);
+    var model = interview.Parse(str);
     FAIL("Should throw an error because of goto in header but didn't.");
   } catch(err) {
     EXPECT_EQ(err,
@@ -1244,10 +1244,10 @@ DefineTest("TestCreateMultipleCopiesOfForms").func = function() {
     "  form W2\n" +
     "  newcopy\n" +
     "  goto edit_w2\n";
-  var model = Parse(str);
+  var model = interview.Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   EXPECT_SUBSTR(form.innerHTML, "Form: W2[0]");
   EXPECT_SUBSTR(form.innerHTML, "Page: edit_w2");
   var inputs = document.getElementsByTagName('input');
@@ -1298,10 +1298,10 @@ DefineTest("TestUseCopyKeyword").func = function() {
     "  usecopy 3\n" +
     "  print x\n" +
     "\n";
-  var model = Parse(str);
+  var model = interview.Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   EXPECT_SUBSTR(form.innerHTML, "Form: foo[3]");
   model.GoToPage("usecopy0");
   EXPECT_SUBSTR(form.innerHTML, "Form: foo[0]");
@@ -1330,7 +1330,7 @@ DefineTest("TestGetSavePageName").func = function() {
   EXPECT_EQ(page_name, "Restore_from_1995_12_17_at_03_24_00");
 }
 DefineTest("TestFindFirstPage").func = function() {
-  var model = Parse(
+  var model = interview.Parse(
       "form page_foo " +
       "form page_bar " +
       "/* page you_found_a_comment */ " +
@@ -1345,7 +1345,7 @@ DefineTest("TestFindFirstPage").func = function() {
   EXPECT_EQ(interview.FindFirstPage(model), "start");
 }
 DefineTest("TestGetTextIndexOfPage").func = function() {
-  var model = Parse(
+  var model = interview.Parse(
       "form page_foo " +
       "form page_bar " +
       "/* page you_found_a_comment */ " +
@@ -1380,10 +1380,10 @@ DefineTest("TestSaveState").func = function() {
                        "page stop\n" +
                        "page p3 usecopy 0 print x\n" +
                        "page p4 usecopy 1 print x\n";
-  var model = Parse(original_model);
+  var model = interview.Parse(original_model);
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   EXPECT_EQ(interview.GetFormCopyId(model), 0)
   model.GoToPage("p2");
   EXPECT_EQ(interview.GetFormCopyId(model), 1)
@@ -1425,7 +1425,7 @@ DefineTest("TestSaveState").func = function() {
   form.remove();
 }
 DefineTest("TestResetFormCopyId").func = function() {
-  var model = Parse("page p1 form foo "+
+  var model = interview.Parse("page p1 form foo "+
                     "page p2 internal_resetcopyid 5 " +
                     "page p3 x = 3; internal_resetcopyid x " +
                     "page p4 newcopy " +
@@ -1433,7 +1433,7 @@ DefineTest("TestResetFormCopyId").func = function() {
                     "page p6 nextcopy");
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   // Just one form copy: 0
   EXPECT_EQ(interview.GetFormCopyId(model), 0);
   EXPECT_EQ(interview.GetNumFormCopies(model), 1);
@@ -1527,10 +1527,10 @@ DefineTest("TestSelect").func = function() {
     "  button up\n" +
     "  button down\n" +
     "  print x\n";
-  var model = Parse(str);
+  var model = interview.Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
-  RenderModel(model, form);
+  interview.RenderModel(model, form);
   model.GoToPage("up");
   model.GoToPage("up");
   model.GoToPage("down");

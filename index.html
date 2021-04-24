@@ -398,9 +398,9 @@ LoadScript("interview.js").onload = function() {
     "  input name\n" +
     "  print \"favorite_food\"\n" +
     "  input favorite_food\n";
-  var model = Parse(str);
-  var interview = document.getElementById("interview");
-  RenderModel(model, interview);
+  var model = interview.Parse(str);
+  var html_form = document.getElementById("interview");
+  interview.RenderModel(model, html_form);
 }
 </script>
 </head>

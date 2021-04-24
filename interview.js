@@ -827,8 +827,8 @@ interview.Reload = function(model) {
   }
   var text=document.getElementById(model.dev_mode_textbox).value;
   var html_form = model.html_form;
-  var model = Parse(text);
-  RenderModel(model, html_form);
+  var model = interview.Parse(text);
+  interview.RenderModel(model, html_form);
   return model;
 }
 interview.ZeroPrefix = function(num, digits) {
@@ -924,6 +924,9 @@ interview.SaveState = function(model) {
          !["\n", "\r"].includes(model.text[char_idx - 1])) {
     char_idx -= 1;
   }
+  if (char_idx > 0 && !["\n", "\r"].includes(model.text[char_idx - 1])) {
+    save_page = "\n" + save_page;
+  }
   var prefix = model.text.substr(0, char_idx);
   var suffix = model.text.substr(char_idx);
   var new_model_text = prefix + save_page + suffix;
@@ -1000,8 +1003,8 @@ interview.DeveloperMode = function(model) {
   var textbox = document.getElementById(dev_mode_textbox);
   textbox.value = model.text;
 }
-function RenderModel(model, html_form) {
-  window.model = model;
+interview.RenderModel = function(model, html_form) {
+  html_form.model = model;
   model.html_form = html_form;
   gtag('event', 'screen_view', {
     'screen_name' : model.current_page
@@ -1053,7 +1056,7 @@ function RenderModel(model, html_form) {
                            ". Check capitalization?", model); 
     }
     model.current_page = page;
-    RenderModel(model, model.html_form);
+    interview.RenderModel(model, model.html_form);
   }
   // Render the navigation buttons.
   str += "<p>";
@@ -1061,7 +1064,7 @@ function RenderModel(model, html_form) {
     var prev_page = page_info.prev_page;
     model.RenderPrevPage = function() {
       model.current_page = prev_page;
-      RenderModel(model, model.html_form);
+      interview.RenderModel(model, model.html_form);
     }
     str += "<button type='button' onclick='model.RenderPrevPage();'>Prev</button>";
   } else {
@@ -1072,7 +1075,7 @@ function RenderModel(model, html_form) {
     var next_page = page_info.next_page;
     model.RenderNextPage = function() {
       model.current_page = next_page;
-      RenderModel(model, model.html_form);
+      interview.RenderModel(model, model.html_form);
     }
     str += "<button type='button' onclick='model.RenderNextPage();'>Next</button>";
   } else {
@@ -1121,7 +1124,7 @@ interview.FindFirstPage = function(model) {
   }
   return page;
 }
-function Parse(text) {
+interview.Parse = function(text) {
   var model = interview.GetEmptyModel(text);
   interview.Tokenize(model);
   interview.CleanTokens(model);
