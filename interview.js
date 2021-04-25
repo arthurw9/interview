@@ -888,15 +888,16 @@ interview.DataToFormula = function(model) {
   var results = [];
   for(var var_name in model.data) {
     var quote = "";
-    if (model.data[var_name] != Number(model.data[var_name])) {
+    let value = model.data[var_name];
+    if (value === "" || value != Number(value)) {
       var quote = "\"";
       var i = 0;
-      while (model.data[var_name].includes(quote)) {
+      while (value.includes(quote)) {
         quote = "z" + i + "\"";
         i += 1;
       }
     }
-    results.push("  " + var_name + " = " + quote + model.data[var_name] + quote + ";\n");
+    results.push("  " + var_name + " = " + quote + value + quote + ";\n");
   }
   return results.join("");
 }
