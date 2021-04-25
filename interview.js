@@ -969,26 +969,58 @@ interview.ToJavaScript = function(model) {
   if (model.dev_mode_textbox == null) {
     return;
   }
+  let jsData = []; 
+  jsData.push("<!DOCTYPE html>");
+  jsData.push("<html>");
+  jsData.push("<head>");
+  jsData.push("<link rel=\"stylesheet\" href=\"style.css?q=3\">");
+  jsData.push("<script>");
+  jsData.push("var LoadScript = function(path) {");
+  jsData.push("  var url = path + \"?z=\" + Math.random();");
+  jsData.push("  var script = document.createElement(\"script\");");
+  jsData.push("  script.src = url;");
+  jsData.push("  document.head.appendChild(script);");
+  jsData.push("  console.log(\"loading\", url);");
+  jsData.push("  return script;");
+  jsData.push("}");
+  jsData.push("LoadScript(\"interview.js\").onload = function() {");
+  jsData.push("  // Start only after the script is loaded.");
   var text=document.getElementById(model.dev_mode_textbox).value;
-  var jsStr = "  var str = ";
   var lines = text.split("\n");
   var n = lines.length;
   while (lines[n-1] == "") {
     --n;
   }
-  var i = 0;
-  var indent = "";
-  while (i < n) {
+  let prefix = "  var str = "
+  let suffix = " +";
+  for(let i = 0; i < n; i++) {
+    if (i > 0) {
+      prefix = "    ";
+    }
+    if (i == n - 1) {
+      suffix = ";";
+    }
     var line = lines[i];
     line = line.split("\"").join("\\\"");
-    if (i != 0) {
-      jsStr += " +\n";
-    }
-    jsStr += indent + "\"" + line + "\\n\"";
-    indent = "    ";
-    i++;
+    jsData.push(prefix + "\"" + line + "\\n\"" + suffix);
   }
-  jsStr += ";\n";
+  jsData.push("  var model = interview.Parse(str);");
+  jsData.push("  var html_form = document.getElementById(\"interview\");");
+  jsData.push("  interview.RenderModel(model, html_form);");
+  jsData.push("}");
+  jsData.push("</script>");
+  jsData.push("</head>");
+  jsData.push("<body>");
+  jsData.push("<h1>Forms!</h1>");
+  jsData.push("<a href=\"test.html\">Unit test file</a>");
+  jsData.push("<div class=flex id=outer>");
+  jsData.push("<div class=flex>");
+  jsData.push("<form id=\"interview\"></form>");
+  jsData.push("</div>");
+  jsData.push("</div>");
+  jsData.push("</body>");
+  jsData.push("</html>");
+  jsStr = jsData.join("\n");
   navigator.clipboard.writeText(jsStr).then(
     function() {
       alert("Copied to clipboard.");
