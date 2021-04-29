@@ -20,17 +20,14 @@ LoadScript("interview.js").onload = function() {
     "button Home\n" +
     "print \"\"\n" +
     " \n" +
-    "page Restore_from_2021_04_24_at_22_46_16\n" +
+    "page Restore_from_2021_04_28_at_17_54_06\n" +
     "  form Interview\n" +
     "  internal_resetcopyid 0\n" +
     "  num = 42;\n" +
     "  str = \"Life, the universe, and everything.\";\n" +
     "  z = \"str = Life, the universe, and everything.\";\n" +
     "  usecopy 0 /* last_known_copy_id */\n" +
-    "  form scratch\n" +
-    "  internal_resetcopyid 0\n" +
-    "  usecopy 0 /* last_known_copy_id */\n" +
-    "  form select_demo\n" +
+    "  form favorite_food\n" +
     "  internal_resetcopyid 0\n" +
     "  name = \"Jerry\";\n" +
     "  favorite_food = \"jello\";\n" +
@@ -51,6 +48,9 @@ LoadScript("interview.js").onload = function() {
     "  favorite_food = \"meatballs\";\n" +
     "  z = \"Mary likes meatballs.\";\n" +
     "  usecopy 2 /* last_known_copy_id */\n" +
+    "  form scratch\n" +
+    "  internal_resetcopyid 0\n" +
+    "  usecopy 0 /* last_known_copy_id */\n" +
     "  form Interview /* last_known_form */\n" +
     "  goto Home /* last_known_page */\n" +
     "\n" +
@@ -379,38 +379,65 @@ LoadScript("interview.js").onload = function() {
     "  button Print_Some_Variables\n" +
     "  button Input_Some_Variables\n" +
     "\n" +
+    "page Select_Keyword\n" +
+    "  print \"The select keyword lets you display a table \n" +
+    "        with data from copies of the current form.\n" +
+    "        It also let's the end user select a new current\n" +
+    "        copy by clicking on a row. For more info on form\n" +
+    "        copies See:\"\n" +
+    "  button Form_Copies\n" +
+    "  print z\"The select statement lets you display as many\n" +
+    "        columns as needed. Each column is separated by\n" +
+    "        a comma. Then the a semicolon ; is needed to\n" +
+    "        end the statement.\n" +
+    "        <pre style=\"border: 1px solid black;\">\n" +
+    "        select a, b, c;\n" +
+    "        </pre>\n" +
+    "        Any expression can be used as a column.\n" +
+    "        For example:\n" +
+    "        <pre style=\"border: 1px solid black;\">\n" +
+    "        select \n" +
+    "            name + \" likes\",\n" +
+    "            favorite_food + \" a lot.\";\n" +
+    "        </pre>\n" +
+    "        Try the favorite food demo below. To see the\n" +
+    "        code that makes it work, press the developer\n" +
+    "        button and search for favorite_food_demoz\"\n" +
+    "  button favorite_food_demo\n" +
+    "\n" +
     "page new_favorite_food\n" +
-    "  form select_demo\n" +
+    "  form favorite_food\n" +
     "  newcopy\n" +
     "  name = \"\";\n" +
     "  favorite_food = \"\";\n" +
-    "  goto Select_Keyword\n" +
+    "  goto favorite_food_demo\n" +
     "\n" +
     "page edit_favorite_food\n" +
-    "  form select_demo\n" +
+    "  form favorite_food\n" +
     "  print \"name\"\n" +
     "  input name\n" +
     "  print \"favorite_food\"\n" +
     "  input favorite_food\n" +
-    "  print \"\"\n" +
-    "  button Select_Keyword\n" +
+    "  print \"Go back to the list:\"\n" +
+    "  button favorite_food_demo\n" +
     "\n" +
     "page prev_favorite_food\n" +
-    "  form select_demo\n" +
+    "  form favorite_food\n" +
     "  prevcopy\n" +
-    "  goto Select_Keyword\n" +
+    "  goto favorite_food_demo\n" +
     "\n" +
     "page next_favorite_food\n" +
-    "  form select_demo\n" +
+    "  form favorite_food\n" +
     "  nextcopy\n" +
-    "  goto Select_Keyword\n" +
+    "  goto favorite_food_demo\n" +
     "  \n" +
-    "page Select_Keyword\n" +
-    "  form select_demo  \n" +
+    "page favorite_food_demo\n" +
+    "  form favorite_food  \n" +
     "  select \n" +
     "      name + \" likes\",\n" +
     "      favorite_food + \" a lot.\";\n" +
-    "  z = name + \" likes \" + favorite_food + \".\";\n" +
+    "  z = \"<big><b>\" + name + \"</b></big> likes <big><b>\" +\n" +
+    "      favorite_food + \"</b></big>.\";\n" +
     "  print z\n" +
     "  button edit_favorite_food\n" +
     "  button new_favorite_food\n" +
