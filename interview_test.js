@@ -1327,7 +1327,7 @@ DefineTest("TestZeroPrefix").func = function() {
 DefineTest("TestGetSavePageName").func = function() {
   var dt = new Date('December 17, 1995 03:24:00');
   var page_name = interview.GetSavePageName(dt);
-  EXPECT_EQ(page_name, "Restore_from_1995_12_17_at_03_24_00");
+  EXPECT_EQ(page_name, "Restore___1995_12_17___03_24_00");
 }
 DefineTest("TestFindFirstPage").func = function() {
   var model = interview.Parse(
@@ -1394,7 +1394,7 @@ DefineTest("TestSaveState").func = function() {
   interview.SaveState(model);
   var text=document.getElementById(model.dev_mode_textbox).value;
   var expected_model_1 = 
-     "page Restore_from_2021_04_17_at_13_51_03\n" +
+     "page Restore___2021_04_17___13_51_03\n" +
      "  form foo\n" +
      "  internal_resetcopyid 0\n" +
      "  x = \"goodbye\";\n" +

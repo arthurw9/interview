@@ -4,6 +4,8 @@ Forms:
 
 GUI:
 - Make the navigation and developer buttons explicit: NextPage, PrevPage, Developer
+- Table columns made by the select statement should resizeable by the user.
+- Input boxes made by the input statements should be resizeable by the user.
 
 Language:
 - Create if statements.
@@ -24,6 +26,7 @@ IDE features:
 Tutorial
 - Split the Tutorial into separate pages with small bits of the model in each page.
 - Create example applications in separate pages.
+- The tutorial should describe the _id keyword.
 
 Misc:
 - Move all Javascript code under the single interview object.

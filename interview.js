@@ -863,11 +863,11 @@ interview.ZeroPrefix = function(num, digits) {
 }
 interview.GetSavePageName = function(datetime) {
   return [
-      "Restore_from",
+      "Restore__",
        "" + datetime.getFullYear(),
        interview.ZeroPrefix(1 + datetime.getMonth()),
        interview.ZeroPrefix(datetime.getDate()),
-       "at",
+       "_",
        interview.ZeroPrefix(datetime.getHours()),
        interview.ZeroPrefix(datetime.getMinutes()),
        interview.ZeroPrefix(datetime.getSeconds())
