@@ -1,15 +1,17 @@
 Forms:
-- Delete form copy
 - Get values from a different form and/or copy.
 
 GUI:
 - Make the navigation and developer buttons explicit: NextPage, PrevPage, Developer
 - Table columns made by the select statement should resizeable by the user.
 - Input boxes made by the input statements should be resizeable by the user.
+- Add a refresh button (footer pages complicate what gets refreshed. Add gosub?)
 
 Language:
+- Delete form copy
 - Create if statements.
 - Create loops.
+- Allow reading additional model from other files while retaining data state.
 
 Database Features:
 - Create sum function to sum values from all copies of a form.
@@ -19,8 +21,7 @@ Database Features:
 
 IDE features:
 - Put line numbers in the Developer text box.
-- Make parse time error messages show up in the Developer text box in red comments.
-- Make run time error messages show in an alert box. Maybe?
+- Make parse and runtime error messages show up in the Developer text box.
 - Create a graphical designer that creates interview code.
 
 Tutorial
