@@ -346,30 +346,30 @@ interview.CleanTokens = function(model) {
   }
   model.tokens = clean_tokens;
 }
-function TokenType(model, idx) {
+interview.TokenType = function(model, idx) {
   return model.tokens[idx][0];
 }
-function TokenString(model, idx) {
+interview.TokenString = function(model, idx) {
   return model.text.substr(model.tokens[idx][1],
                            model.tokens[idx][2]);
 }
 interview.TokenToNode = function(model) {
   var node = {};
-  node.type = TokenType(model, model.token_idx);
+  node.type = interview.TokenType(model, model.token_idx);
   node.token = model.tokens[model.token_idx];
   node.parent = null;
   node.left = null;
   node.right = null;
   if (node.type == interview.NUMBER_TOKEN) {
-    node.right = Number(TokenString(model, model.token_idx));
+    node.right = Number(interview.TokenString(model, model.token_idx));
   }
   if ([interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN].includes(node.type)) {
-    node.right = String(TokenString(model, model.token_idx));
+    node.right = String(interview.TokenString(model, model.token_idx));
   }
   model.token_idx += 1;
   return node;
 }
-function AppendBelowRight(node, new_node) {
+interview.AppendBelowRight = function(node, new_node) {
   new_node.parent = node;
   new_node.left = node.right;
   node.right = new_node;
@@ -386,7 +386,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
   // One word statements
   if ([interview.START].includes(curr.type)) {
     if ([interview.NEWCOPY_KEYWORD, interview.NEXTCOPY_KEYWORD, interview.PREVCOPY_KEYWORD].includes(new_node.type)) {
-      AppendBelowRight(curr, new_node);
+      interview.AppendBelowRight(curr, new_node);
       model.expression_end = true;
       return new_node;
     }
@@ -404,7 +404,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
       if (new_node.type == interview.SELECT_KEYWORD) {
         new_node.columns = [];
       }
-      AppendBelowRight(curr, new_node);
+      interview.AppendBelowRight(curr, new_node);
       return new_node;
     }
   }
@@ -422,7 +422,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
       fake_parenthesis_object.parent = curr;
       curr.columns.push(fake_parenthesis_object);
       fake_parenthesis_object.column_idx = curr.columns.length - 1;
-      AppendBelowRight(fake_parenthesis_object, new_node);
+      interview.AppendBelowRight(fake_parenthesis_object, new_node);
       return new_node;
     }
     interview.ParseError("Unexpected " + new_node.type + " after " +
@@ -452,7 +452,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
   if ([interview.FORM_KEYWORD, interview.PAGE_KEYWORD, interview.BUTTON_KEYWORD,
        interview.INPUT_KEYWORD, interview.GOTO_KEYWORD].includes(curr.type)) {
     if ([interview.IDENTIFIER_TOKEN].includes(new_node.type)) {
-      AppendBelowRight(curr, new_node);
+      interview.AppendBelowRight(curr, new_node);
       model.expression_end = true;
       if (curr.type == interview.FORM_KEYWORD) {
         interview.SetForm(model, String(new_node.right));
@@ -483,7 +483,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
        interview.USECOPY_KEYWORD].includes(curr.type)) {
     if ([interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN,
         interview.NUMBER_TOKEN].includes(new_node.type)) {
-      AppendBelowRight(curr, new_node);
+      interview.AppendBelowRight(curr, new_node);
       model.expression_end = true;
       return new_node;
     }
@@ -498,7 +498,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
   }
   if ([interview.START].includes(curr.type)) {
     if ([interview.IDENTIFIER_TOKEN].includes(new_node.type)) {
-      AppendBelowRight(curr, new_node);
+      interview.AppendBelowRight(curr, new_node);
       return new_node;
     }
   }
@@ -506,7 +506,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
     if (["="].includes(new_node.type)) {
       curr = curr.parent;
       if ([interview.START].includes(curr.type)) {
-        AppendBelowRight(curr, new_node);
+        interview.AppendBelowRight(curr, new_node);
         return new_node;
       }
     }
@@ -516,7 +516,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
              interview.IDENTIFIER_TOKEN, interview.COPYID_KEYWORD];
   if (operators.includes(curr.type)) {
     if (objects.includes(new_node.type)) {
-      AppendBelowRight(curr, new_node);
+      interview.AppendBelowRight(curr, new_node);
       return new_node;
     }
   }
@@ -528,7 +528,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
       while (stuff_to_skip.includes(curr.type)) {
         curr = curr.parent;
       }
-      AppendBelowRight(curr, new_node);
+      interview.AppendBelowRight(curr, new_node);
       return new_node;
     }
     if (["+", "-", ")"].includes(new_node.type)) {
@@ -540,7 +540,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
         curr.type = "()";
         return curr;
       }
-      AppendBelowRight(curr, new_node);
+      interview.AppendBelowRight(curr, new_node);
       return new_node;
     }
   }
@@ -548,7 +548,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
     while ([interview.STRING_TOKEN, "+"].includes(curr.type)) {
       curr = curr.parent;
     }
-    AppendBelowRight(curr, new_node);
+    interview.AppendBelowRight(curr, new_node);
     return new_node;
   }
   interview.ParseError("Can't add " + new_node.type + " after " + curr.type,
@@ -619,7 +619,7 @@ interview.ValidateExpression = function(model, expr) {
   }
   interview.ParseError("Unexpected token during Parsing. ", expr.token, model);
 }
-function ParseExpression(model) {
+interview.ParseExpression = function(model) {
   var start = {};
   start.type = interview.START;
   var curr = start;
@@ -633,7 +633,7 @@ function ParseExpression(model) {
   interview.ValidateExpression(model, expr);
   return expr;
 }
-function ExpressionDebugString(model, expr) {
+interview.ExpressionDebugString = function(model, expr) {
   if (expr.type == interview.NUMBER_TOKEN) {
     return String(expr.right);
   }
@@ -644,27 +644,27 @@ function ExpressionDebugString(model, expr) {
     return String(expr.right);
   }
   if (expr.type == "()") {
-    return ExpressionDebugString(model, expr.right);
+    return interview.ExpressionDebugString(model, expr.right);
   }
   if (expr.type == "+") {
-    return ExpressionDebugString(model, expr.left) + " " +
-           ExpressionDebugString(model, expr.right) + " +";
+    return interview.ExpressionDebugString(model, expr.left) + " " +
+           interview.ExpressionDebugString(model, expr.right) + " +";
   }
   if (expr.type == "-") {
-    return ExpressionDebugString(model, expr.left) + " " +
-           ExpressionDebugString(model, expr.right) + " -";
+    return interview.ExpressionDebugString(model, expr.left) + " " +
+           interview.ExpressionDebugString(model, expr.right) + " -";
   }
   if (expr.type == "*") {
-    return ExpressionDebugString(model, expr.left) + " " +
-           ExpressionDebugString(model, expr.right) + " *";
+    return interview.ExpressionDebugString(model, expr.left) + " " +
+           interview.ExpressionDebugString(model, expr.right) + " *";
   }
   if (expr.type == "/") {
-    return ExpressionDebugString(model, expr.left) + " " +
-           ExpressionDebugString(model, expr.right) + " /";
+    return interview.ExpressionDebugString(model, expr.left) + " " +
+           interview.ExpressionDebugString(model, expr.right) + " /";
   }
   if (expr.type == "=") {
-    return ExpressionDebugString(model, expr.left) + " " +
-           ExpressionDebugString(model, expr.right) + " =";
+    return interview.ExpressionDebugString(model, expr.left) + " " +
+           interview.ExpressionDebugString(model, expr.right) + " =";
   }
   return "Unexpected expression type: " + expr.type;
 }
@@ -681,7 +681,7 @@ interview.RemoveQuotes = function(str) {
 // TODO: Maybe a model should also be an expression.
 //       We could abstract away the difference.
 // TODO: Optimize away the "()" nodes from the AST.
-function Evaluate(model, expr) {
+interview.Evaluate = function(model, expr) {
   if (expr.type == interview.NUMBER_TOKEN) {
     return Number(expr.right);
   }
@@ -689,19 +689,23 @@ function Evaluate(model, expr) {
     return interview.RemoveQuotes(String(expr.right));
   }
   if (expr.type == "+") {
-    return Evaluate(model, expr.left) + Evaluate(model, expr.right);
+    return interview.Evaluate(model, expr.left) +
+           interview.Evaluate(model, expr.right);
   }
   if (expr.type == "-") {
-    return Evaluate(model, expr.left) - Evaluate(model, expr.right);
+    return interview.Evaluate(model, expr.left) -
+           interview.Evaluate(model, expr.right);
   }
   if (expr.type == "*") {
-    return Evaluate(model, expr.left) * Evaluate(model, expr.right);
+    return interview.Evaluate(model, expr.left) *
+           interview.Evaluate(model, expr.right);
   }
   if (expr.type == "/") {
-    return Evaluate(model, expr.left) / Evaluate(model, expr.right);
+    return interview.Evaluate(model, expr.left) /
+           interview.Evaluate(model, expr.right);
   }
   if (expr.type == "()") {
-    return Evaluate(model, expr.right);
+    return interview.Evaluate(model, expr.right);
   }
   if (expr.type == interview.IDENTIFIER_TOKEN) {
     var identifier = expr.right;
@@ -712,7 +716,7 @@ function Evaluate(model, expr) {
   }
   if (expr.type == "=") {
     var identifier = expr.left.right;
-    var value = Evaluate(model, expr.right);
+    var value = interview.Evaluate(model, expr.right);
     model.data[identifier] = value;
     return value;
   }
@@ -736,11 +740,11 @@ function Evaluate(model, expr) {
     return "";
   }
   if (expr.type == interview.USECOPY_KEYWORD) {
-    interview.UseCopyId(model, Evaluate(model, expr.right));
+    interview.UseCopyId(model, interview.Evaluate(model, expr.right));
     return "";
   }
   if (expr.type == interview.SETCOPYID_KEYWORD) {
-    interview.ResetCopyId(model, expr, Evaluate(model, expr.right));
+    interview.ResetCopyId(model, expr, interview.Evaluate(model, expr.right));
     return "";
   }
   interview.ParseError("Unexpected token during Evaluation.", expr.token, model);
@@ -777,7 +781,7 @@ interview.RenderSelect = function(model, select_expr) {
     interview.UseCopyId(model, copy_id);
     for (var i in select_expr.columns) {
       str += "<td>";
-      str += Evaluate(model, select_expr.columns[i]);
+      str += interview.Evaluate(model, select_expr.columns[i]);
       str += "</td>";
     }
     str += "</tr>";
@@ -786,9 +790,9 @@ interview.RenderSelect = function(model, select_expr) {
   interview.UseCopyId(model, original_copy_id);
   return str;
 }
-function RenderExpression(model, expr) {
+interview.RenderExpression = function(model, expr) {
   if (expr.type == interview.PRINT_KEYWORD) {
-    return "<p>" + Evaluate(model, expr.right) + "</p>";
+    return "<p>" + interview.Evaluate(model, expr.right) + "</p>";
   }
   if (expr.type == interview.BUTTON_KEYWORD) {
     var destination_page = String(expr.right.right);
@@ -820,14 +824,14 @@ function RenderExpression(model, expr) {
     // TODO: Need to verify:
     // The same identifier should not be input more than once on a page.
     if (model.data.hasOwnProperty(identifier_name)) {
-      var current_value = Evaluate(model, expr.right);
+      var current_value = interview.Evaluate(model, expr.right);
       interview.AddInitializer(
          model,
          function() { document.getElementById(id).value = current_value; });
     }
     return str;
   }
-  Evaluate(model, expr);
+  interview.Evaluate(model, expr);
   return "";
 }
 interview.RandomIdentifier = function(prefix) {
@@ -1070,7 +1074,7 @@ interview.RenderModel = function(model, html_form) {
     if ([interview.PAGE_KEYWORD].includes(expr.type)) {
       break;
     }
-    str += RenderExpression(model, expr);
+    str += interview.RenderExpression(model, expr);
     ++idx;
   }
   // Now run the page specific code.
@@ -1099,7 +1103,7 @@ interview.RenderModel = function(model, html_form) {
       idx = page_info.start_expr_idx + 1;
       continue;
     }
-    str += RenderExpression(model, expr);
+    str += interview.RenderExpression(model, expr);
     ++idx;
   }
   // GoToPage is used by the button keyword.
@@ -1145,9 +1149,9 @@ interview.RenderModel = function(model, html_form) {
   }
   model.initializer_list = [];
 }
-function RunModel(model) {
+interview.RunModel = function(model) {
   for (var i = 0; i < model.expression_list.length; ++i) {
-    Evaluate(model, model.expression_list[i].expression);
+    interview.Evaluate(model, model.expression_list[i].expression);
   }
 }
 interview.GetEmptyModel = function(text) {
@@ -1180,7 +1184,7 @@ interview.Parse = function(text) {
   while (model.token_idx < model.tokens.length) {
     // First token of the expression currently being parsed.
     model.first_token_idx = model.token_idx;
-    var expr = ParseExpression(model);
+    var expr = interview.ParseExpression(model);
     var last_token_idx = model.token_idx - 1;
     model.expression_list.push(
         {

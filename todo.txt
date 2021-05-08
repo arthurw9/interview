@@ -2,16 +2,16 @@ Forms:
 - Get values from a different form and/or copy.
 
 GUI:
-- Make the navigation and developer buttons explicit: NextPage, PrevPage, Developer
+- Make the navigation and developer buttons explicit commands: NextPage, PrevPage, Developer
 - Table columns made by the select statement should resizeable by the user.
 - Input boxes made by the input statements should be resizeable by the user.
 - Add a refresh button (footer pages complicate what gets refreshed. Add gosub?)
 
 Language:
 - Delete form copy
-- Create if statements.
-- Create loops.
-- Allow reading additional model from other files while retaining data state.
+- if statements.
+- loops.
+- Allow reading additional code from other files while retaining form/data state.
 
 Database Features:
 - Create sum function to sum values from all copies of a form.
@@ -27,7 +27,5 @@ IDE features:
 Tutorial
 - Split the Tutorial into separate pages with small bits of the model in each page.
 - Create example applications in separate pages.
-- The tutorial should describe the _id keyword.
+- Describe the _id keyword in the tutorial.
 
-Misc:
-- Move all Javascript code under the single interview object.

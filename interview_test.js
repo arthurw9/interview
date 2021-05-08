@@ -347,8 +347,8 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   EXPECT_EQ(model.expression_list[0].first_token_idx, 0);
   EXPECT_EQ(model.expression_list[0].last_token_idx, 3);
   var expr = model.expression_list[0].expression;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "x \"hello world\" =");
-  RunModel(model);
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr), "x \"hello world\" =");
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], "hello world");
 
   model = interview.Parse("x = 1; y = 2;");
@@ -358,34 +358,34 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   EXPECT_EQ(model.expression_list[1].first_token_idx, 4);
   EXPECT_EQ(model.expression_list[1].last_token_idx, 7);
   expr = model.expression_list[0].expression;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "x 1 =");
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr), "x 1 =");
   expr = model.expression_list[1].expression;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "y 2 =");
-  RunModel(model);
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr), "y 2 =");
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 1);
   EXPECT_EQ(model.data["y"], 2);
 
   // TODO: Should we require a semicolon for the last expression?
   model = interview.Parse(" /* irrelevant */ x = \"doesn't need a ; lol\"");
   expr = model.expression_list[0].expression;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "x \"doesn't need a ; lol\" =");
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr), "x \"doesn't need a ; lol\" =");
 
   model = interview.Parse("x = 13;");
   expr = model.expression_list[0].expression;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "x 13 =");
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr), "x 13 =");
   EXPECT_EQ(expr.type, "=");
   EXPECT_EQ(expr.left.type, interview.IDENTIFIER_TOKEN);
   EXPECT_EQ(expr.left.right, "x");
   expr = expr.right;
   EXPECT_EQ(expr.type, interview.NUMBER_TOKEN);
   EXPECT_EQ(expr.right, 13);
-  EXPECT_EQ(Evaluate(model, expr), 13);
-  RunModel(model);
+  EXPECT_EQ(interview.Evaluate(model, expr), 13);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 13);
 
   model = interview.Parse("x = 1 + 2 + 3;");
   expr = model.expression_list[0].expression;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "x 1 2 + 3 + =");
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr), "x 1 2 + 3 + =");
   EXPECT_EQ(expr.type, "=");
   expr = expr.right;
   EXPECT_EQ(expr.type, "+");
@@ -398,7 +398,7 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   EXPECT_EQ(expr.left.type, interview.NUMBER_TOKEN);
   EXPECT_EQ(expr.left.right, 1);
   EXPECT_EQ(model.token_idx, 8);
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 6);
 
   model = interview.Parse("x = 10 - 2 - 4;");
@@ -406,7 +406,7 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   expr = model.expression_list[0].expression;
   EXPECT_EQ(expr.type, "=");
   expr = expr.right;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "10 2 - 4 -");
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr), "10 2 - 4 -");
   EXPECT_EQ(expr.type, "-");
   EXPECT_EQ(expr.right.type, interview.NUMBER_TOKEN);
   EXPECT_EQ(expr.right.right, 4);
@@ -416,67 +416,67 @@ DefineTest("TestParseAndRunAssignments").func = function() {
   EXPECT_EQ(expr.right.right, 2);
   EXPECT_EQ(expr.left.type, interview.NUMBER_TOKEN);
   EXPECT_EQ(expr.left.right, 10);
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 4);
 
   model = interview.Parse("x = 2 * 4 * 9;");
   expr = model.expression_list[0].expression;
   EXPECT_EQ(expr.type, "=");
   expr = expr.right;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "2 4 * 9 *");
-  EXPECT_EQ(Evaluate(model, expr), 72);
-  RunModel(model);
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr), "2 4 * 9 *");
+  EXPECT_EQ(interview.Evaluate(model, expr), 72);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 72);
 
   model = interview.Parse("x = 64 / 4 / 2;");
   expr = model.expression_list[0].expression.right;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "64 4 / 2 /");
-  EXPECT_EQ(Evaluate(model, expr), 8);
-  RunModel(model);
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr), "64 4 / 2 /");
+  EXPECT_EQ(interview.Evaluate(model, expr), 8);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 8);
 
   model = interview.Parse("x = 1 + 4 * 9 / 2 - 5;");
   expr = model.expression_list[0].expression.right;
-  EXPECT_EQ(ExpressionDebugString(model, expr), "1 4 9 * 2 / + 5 -");
-  EXPECT_EQ(Evaluate(model, expr), 14);
-  RunModel(model);
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr), "1 4 9 * 2 / + 5 -");
+  EXPECT_EQ(interview.Evaluate(model, expr), 14);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 14);
 
   model = interview.Parse("x = (((6 - 2 -2)));");
   expr = model.expression_list[0].expression.right;
-  EXPECT_EQ(ExpressionDebugString(model, expr),
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr),
             "6 2 - 2 -");
-  EXPECT_EQ(Evaluate(model, expr), 2);
-  RunModel(model);
+  EXPECT_EQ(interview.Evaluate(model, expr), 2);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 2);
 
   model = interview.Parse("x = 1 + (1 + 3) * 3 / 2 / 2;");
   expr = model.expression_list[0].expression.right;
-  EXPECT_EQ(ExpressionDebugString(model, expr),
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr),
             "1 1 3 + 3 * 2 / 2 / +");
-  EXPECT_EQ(Evaluate(model, expr), 4);
-  RunModel(model);
+  EXPECT_EQ(interview.Evaluate(model, expr), 4);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 4);
 
   model = interview.Parse("x = (11 * 5 - 50);");
   expr = model.expression_list[0].expression.right;
-  EXPECT_EQ(ExpressionDebugString(model, expr),
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr),
             "11 5 * 50 -");
-  EXPECT_EQ(Evaluate(model, expr), 5);
-  RunModel(model);
+  EXPECT_EQ(interview.Evaluate(model, expr), 5);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 5);
 
   model = interview.Parse("x = (6 - 2 -2) * (1 + (1 + 3) * 3 / 2 / 2) - (11 * 5 - 50);");
   expr = model.expression_list[0].expression.right;
-  EXPECT_EQ(ExpressionDebugString(model, expr),
+  EXPECT_EQ(interview.ExpressionDebugString(model, expr),
             "6 2 - 2 - 1 1 3 + 3 * 2 / 2 / + * 11 5 * 50 - -");
-  EXPECT_EQ(Evaluate(model, expr), 3);
-  RunModel(model);
+  EXPECT_EQ(interview.Evaluate(model, expr), 3);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 3);
 }
 DefineTest("TestParseAndRunAssignmentsWithState").func = function() {
   var model = interview.Parse("x = 1; y = 2; x = x + y; y = y + 2; x = x * y;");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], 12);
   EXPECT_EQ(model.data["y"], 4);
 }
@@ -609,48 +609,48 @@ DefineTest("TestTokenizeIdDelimitedStrings").func = function() {
 }
 DefineTest("TestEvaluateStrings").func = function() {
   var model = interview.Parse("x = \"hello world\";");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], "hello world");
 
   model = interview.Parse("x = a\"hello to a world with a \"a\";");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], "hello to a world with a \"");
 
   model = interview.Parse("x = \"\";");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], "");
 
   model = interview.Parse("x = abc\"abc\";");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], "");
 
   model = interview.Parse("x = abc\"abcabc\";");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], "abc");
 
   model = interview.Parse("x = abc\"\"abc\";");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], "\"");
 }
 DefineTest("TestStringAddition").func = function() {
   var model = interview.Parse("x = \"hello \" + \"world\";");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], "hello world");
 
   model = interview.Parse("x = 12; y = x * x; z = x + \" squared = \" + y;");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["z"], "12 squared = 144");
 
   model = interview.Parse("x = \"hello\"; z = \"x=\" + x;");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["z"], "x=hello");
 
   model = interview.Parse("x = \"hello \" + 123 + \" there \"; x = x + x;");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], "hello 123 there hello 123 there ");
 
   model = interview.Parse("x = \"hello \" + 123 + 123;");
-  RunModel(model);
+  interview.RunModel(model);
   EXPECT_EQ(model.data["x"], "hello 123123");
 }
 DefineTest("TestTokenizeKeywords").func = function() {
