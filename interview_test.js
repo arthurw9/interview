@@ -1,29 +1,25 @@
 function FAIL(msg) {
-  console.log(current_test_name);
   console.trace("ERROR: ", msg);
 }
 function EXPECT_EQ(a, b) {
   if (a==b) return;
-  console.log(current_test_name);
   console.trace("ERROR: Not Equal: [", a, "] = [", b, "]");
 }
 function EXPECT_INCLUDES(list, value) {
   if (list.includes(value)) return;
-  console.log(current_test_name);
   console.trace("ERROR: Does not include [", value, "]: [", list, "]");
 }
 function EXPECT_SUBSTR(haystack, needle) {
   if (haystack.includes(needle)) return;
-  console.log(current_test_name);
   console.trace("ERROR: Does contain substring [", needle, "]: [", haystack, "]");
 }
 function EXPECT_NOT_SUBSTR(haystack, needle) {
   if (haystack.includes(needle)) {
-    console.log(current_test_name);
     console.trace("ERROR: Contains unexpected substring [", needle, "]: [", haystack, "]");
   }
 }
 var tests = {};
+var async_tests_still_running = {};
 var current_test_name = "";
 function DefineTest(name) {
   var t = {};
@@ -34,6 +30,30 @@ function DefineTest(name) {
   t.name = name;
   tests[name] = t;
   return t;
+}
+function AsyncTest() {
+  // Called by Asynchronous tests.
+  // Returns the test name which must be passed to AsyncDone() when the test is complete. 
+  async_tests_still_running[current_test_name] = 1;
+  return current_test_name;
+}
+function AsyncDone(test_name) {
+  // Called when an Asynchronous test completes.
+  // test_name must come from AsncTest()
+  if (!async_tests_still_running.hasOwnProperty(test_name)) {
+    FAIL("AsyncDone called but test is not running: " + test_name);
+  } else {
+    delete async_tests_still_running[test_name];
+  }
+  CheckDone();
+}
+function CheckDone() {
+  if (Object.keys(async_tests_still_running).length > 0) {
+    // TODO: set a timer?
+    return;
+  }
+  console.log("Testing: DONE");
+  console.log("Testing: " + Object.keys(tests).length + " tests");
 }
 function RunTestsRandomly() {
   console.log("Testing: START");
@@ -51,8 +71,7 @@ function RunTestsRandomly() {
       FAIL(err);
     }
   }
-  console.log("Testing: DONE");
-  console.log("Testing: " + Object.keys(tests).length + " tests");
+  CheckDone();
 }
 function RunTest(name) {
   current_test_name = name;
@@ -1501,6 +1520,49 @@ DefineTest("TestResetFormCopyId").func = function() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
+DefineTest("TestExpressionsWith_id").func = function() {
+  let str = "page p1 form foo " +
+            "    z = \"[_id = \" + _id + \"]\"; print z " +
+            "    z = \"[_id + 5 = \" + (_id + 5) + \"]\"; print z " +
+            "    z = \"[_id - 5 = \" + (_id - 5) + \"]\"; print z " +
+            "    z = \"[5 - _id = \" + (5 - _id) + \"]\"; print z " +
+            "    z = \"[5 + _id = \" + (5 + _id) + \"]\"; print z " +
+            "    z = \"[5 * _id = \" + (5 * _id) + \"]\"; print z " +
+            "    z = \"[_id * 5 = \" + (_id * 5) + \"]\"; print z " +
+            "    z = \"[_id / 5 = \" + (_id / 5) + \"]\"; print z " +
+            "    z = \"[5 / _id = \" + (5 / _id) + \"]\"; print z ";
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  var model = interview.RenderFromStr(str, form);
+  model.GoToPage("p1");
+  EXPECT_SUBSTR(form.innerHTML, "[_id = 0]");
+  EXPECT_SUBSTR(form.innerHTML, "[_id + 5 = 5]");
+  EXPECT_SUBSTR(form.innerHTML, "[_id - 5 = -5]");
+  EXPECT_SUBSTR(form.innerHTML, "[5 - _id = 5]");
+  EXPECT_SUBSTR(form.innerHTML, "[5 + _id = 5]");
+  EXPECT_SUBSTR(form.innerHTML, "[5 * _id = 0]");
+  EXPECT_SUBSTR(form.innerHTML, "[_id * 5 = 0]");
+  EXPECT_SUBSTR(form.innerHTML, "[_id / 5 = 0]");
+  EXPECT_SUBSTR(form.innerHTML, "[5 / _id = Infinity]");
+  interview.ResetCopyId(model, null, 3)
+  model.GoToPage("p1");
+  EXPECT_SUBSTR(form.innerHTML, "[_id = 3]");
+  EXPECT_SUBSTR(form.innerHTML, "[_id + 5 = 8]");
+  EXPECT_SUBSTR(form.innerHTML, "[_id - 5 = -2]");
+  EXPECT_SUBSTR(form.innerHTML, "[5 - _id = 2]");
+  EXPECT_SUBSTR(form.innerHTML, "[5 + _id = 8]");
+  EXPECT_SUBSTR(form.innerHTML, "[5 * _id = 15]");
+  EXPECT_SUBSTR(form.innerHTML, "[_id * 5 = 15]");
+  EXPECT_SUBSTR(form.innerHTML, "[_id / 5 = 0.6]");
+  // This next line might be a bad test.
+  EXPECT_SUBSTR(form.innerHTML, "[5 / _id = 1.6666666666666667]");
+  interview.ResetCopyId(model, null, 15)
+  model.GoToPage("p1");
+  EXPECT_SUBSTR(form.innerHTML, "[_id = 15]");
+  EXPECT_SUBSTR(form.innerHTML, "[_id / 5 = 3]");
+  EXPECT_SUBSTR(form.innerHTML, "[5 / _id = 0.3333333333333333]");
+  form.remove();
+}
 DefineTest("TestSelect").func = function() {
   var str = "page initialize\n" +
     "  form foo\n" +
@@ -1522,24 +1584,88 @@ DefineTest("TestSelect").func = function() {
     "\n" +
     "page main\n" +
     "  form foo\n" +
-    "  select \"&nbsp;\" + _id + \"&nbsp;\", x," +
-    "         _id + 7, \"foo-\" + _id, 2* 11 - _id;\n" +
+    "  select " +
+    "      \"col 1\"," +
+    "      \"[ _id = \" + _id + \" and x = \" + x + \"]\"," +
+    "      3;" +
     "  button up\n" +
     "  button down\n" +
-    "  print x\n";
+    "  z = \"current = \" + _id + \", \" + x;\n" +
+    "  print z";
   var model = interview.Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
   interview.RenderModel(model, form);
+  EXPECT_SUBSTR(form.innerHTML, "col 1");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 0 and x = Hello A]");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 1 and x = Hello B]");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 2 and x = Hello C]");
+  EXPECT_SUBSTR(form.innerHTML, "3");
+  EXPECT_SUBSTR(form.innerHTML, "current = 1, Hello B");
   model.GoToPage("up");
+  EXPECT_SUBSTR(form.innerHTML, "col 1");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 0 and x = Hello A]");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 1 and x = Hello B]");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 2 and x = Hello C]");
+  EXPECT_SUBSTR(form.innerHTML, "3");
+  EXPECT_SUBSTR(form.innerHTML, "current = 0, Hello A");
   model.GoToPage("up");
+  EXPECT_SUBSTR(form.innerHTML, "col 1");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 0 and x = Hello A]");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 1 and x = Hello B]");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 2 and x = Hello C]");
+  EXPECT_SUBSTR(form.innerHTML, "3");
+  EXPECT_SUBSTR(form.innerHTML, "current = 0, Hello A");
   model.GoToPage("down");
   model.GoToPage("down");
+  EXPECT_SUBSTR(form.innerHTML, "col 1");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 0 and x = Hello A]");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 1 and x = Hello B]");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 2 and x = Hello C]");
+  EXPECT_SUBSTR(form.innerHTML, "3");
+  EXPECT_SUBSTR(form.innerHTML, "current = 2, Hello C");
   model.GoToPage("down");
-  model.GoToPage("down");
-  // TODO: Verify some data.
+  EXPECT_SUBSTR(form.innerHTML, "col 1");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 0 and x = Hello A]");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 1 and x = Hello B]");
+  EXPECT_SUBSTR(form.innerHTML, "[ _id = 2 and x = Hello C]");
+  EXPECT_SUBSTR(form.innerHTML, "3");
+  EXPECT_SUBSTR(form.innerHTML, "current = 2, Hello C");
   // For manual testing, don't remove the form element.
   form.remove();
+}
+DefineTest("TestRenderFromStr").func = function() {
+  let form = document.createElement("form");
+  document.body.appendChild(form);
+  let str = "page A page B page C";
+  let model = interview.RenderFromStr(str, form);
+  EXPECT_SUBSTR(form.innerHTML, "Page: A");
+  model.GoToPage("C");
+  EXPECT_SUBSTR(form.innerHTML, "Page: C");
+  model.GoToPage("B");
+  EXPECT_SUBSTR(form.innerHTML, "Page: B");
+  model.RenderPrevPage();
+  EXPECT_SUBSTR(form.innerHTML, "Page: A");
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
+DefineTest("TestRenderFromURL").func = function() {
+  let test_name = AsyncTest();
+  let onload = function(model) {
+    EXPECT_SUBSTR(form.innerHTML, "Page: X");
+    model.GoToPage("Z");
+    EXPECT_SUBSTR(form.innerHTML, "Page: Z");
+    model.GoToPage("Y");
+    EXPECT_SUBSTR(form.innerHTML, "Page: Y");
+    model.RenderPrevPage();
+    EXPECT_SUBSTR(form.innerHTML, "Page: X");
+    // For manual testing, don't remove the form element.
+    form.remove();
+    AsyncDone(test_name);
+  }
+  let form = document.createElement("form");
+  document.body.appendChild(form);
+  let model = interview.RenderFromURL("test_remote_model.interview", form, onload);
 }
 RunTestsRandomly();
 

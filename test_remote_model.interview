@@ -1,0 +1,2 @@
+/* used in unit test to check if remote models can be loaded */
+page X page Y page Z

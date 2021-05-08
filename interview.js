@@ -8,7 +8,7 @@
 window.dataLayer = window.dataLayer || [];
 gtag = window.gtag || function() {dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', 'G-8KY282RL6T');
+gtag('config', 'G-8KY282RL6T', { 'app_name': 'Interview' });
 // A top level object for this library.
 // TODO: Move all symbols under this object.
 var interview = {};
@@ -1192,5 +1192,27 @@ interview.Parse = function(text) {
   // TODO: Make sure all button destination pages exist.
   model.current_page = interview.FindFirstPage(model);
   return model;
+}
+interview.RenderFromStr = function(str, html_form) {
+  var model = interview.Parse(str);
+  interview.RenderModel(model, html_form);
+  return model;
+}
+interview.RenderFromURL = function(url, html_form, onload) {
+  if (onload == null) {
+    onload = function(model){};
+  }
+  fetch(url)
+    .then(function(response) {
+            if (!response.ok) {
+              console.log(response);
+            }
+            return response.text();
+          })
+    .then(function(reponse_text) {
+            var model = interview.RenderFromStr(reponse_text, html_form);
+            onload(model);
+          })
+    .catch (error => console.log('Error:' + error));
 }
 
