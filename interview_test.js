@@ -1,21 +1,49 @@
+function ShowTestName() {
+  var hr = document.createElement("hr");
+  document.body.appendChild(hr);
+  var div = document.createElement("div");
+  div.innerHTML = current_test_name;
+  document.body.appendChild(div);
+  console.log(current_test_name);
+}
+function Msg() {
+  var div = document.createElement("div");
+  div.innerHTML = Array.prototype.join.call(arguments, "");
+  document.body.appendChild(div);
+  console.log(Array.prototype.join.call(arguments, ""));
+}
+function MsgTrace() {
+  var div = document.createElement("div");
+  div.innerHTML = Array.prototype.join.call(arguments, "");
+  document.body.appendChild(div);
+  var pre = document.createElement("pre");
+  pre.innerHTML = Error().stack;
+  document.body.appendChild(pre);
+  console.trace(Array.prototype.join.call(arguments, ""));
+}
 function FAIL(msg) {
-  console.trace("ERROR: ", msg);
+  ShowTestName();
+  MsgTrace("ERROR: ", msg);
 }
 function EXPECT_EQ(a, b) {
   if (a==b) return;
-  console.trace("ERROR: Not Equal: [", a, "] = [", b, "]");
+  ShowTestName();
+  MsgTrace("ERROR: Not Equal: [", a, "] = [", b, "]");
 }
 function EXPECT_INCLUDES(list, value) {
   if (list.includes(value)) return;
-  console.trace("ERROR: Does not include [", value, "]: [", list, "]");
+  ShowTestName();
+  MsgTrace("ERROR: Does not include [", value, "]: [", list, "]");
 }
 function EXPECT_SUBSTR(haystack, needle) {
   if (haystack.includes(needle)) return;
-  console.trace("ERROR: Does contain substring [", needle, "]: [", haystack, "]");
+  ShowTestName();
+  MsgTrace("ERROR: Does contain substring [", needle, "]: [", haystack, "]");
 }
 function EXPECT_NOT_SUBSTR(haystack, needle) {
   if (haystack.includes(needle)) {
-    console.trace("ERROR: Contains unexpected substring [", needle, "]: [", haystack, "]");
+    ShowTestName();
+    MsgTrace("ERROR: Contains unexpected substring [", needle, "]: [", haystack, "]");
   }
 }
 var tests = {};
@@ -52,11 +80,11 @@ function CheckDone() {
     // TODO: set a timer?
     return;
   }
-  console.log("Testing: DONE");
-  console.log("Testing: " + Object.keys(tests).length + " tests");
+  Msg("Testing: DONE");
 }
 function RunTestsRandomly() {
-  console.log("Testing: START");
+  Msg("Testing: " + Object.keys(tests).length + " tests");
+  Msg("Testing: START");
   var tests_to_run = [];
   for(var name in tests) {
     tests_to_run.push(tests[name]);
@@ -1652,6 +1680,7 @@ DefineTest("TestRenderFromStr").func = function() {
 DefineTest("TestRenderFromURL").func = function() {
   let test_name = AsyncTest();
   let onload = function(model) {
+    current_test_name = test_name;
     EXPECT_SUBSTR(form.innerHTML, "Page: X");
     model.GoToPage("Z");
     EXPECT_SUBSTR(form.innerHTML, "Page: Z");
