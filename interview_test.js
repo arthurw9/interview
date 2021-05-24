@@ -1740,5 +1740,29 @@ DefineTest("CanRestartAfterError").func = function() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
+DefineTest("DisplayErrorsWithDefaultNavigation").func = function() {
+  var model = interview.Parse("page a page b goto missing page c");
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  interview.RenderModel(model, form);
+  EXPECT_SUBSTR(form.innerHTML, "Page: a");
+  model.RenderNextPage();
+  EXPECT_SUBSTR(form.innerHTML, "No such page found: [missing]. Check capitalization?");
+
+  model.GoToPage("c");
+  EXPECT_SUBSTR(form.innerHTML, "Page: c");
+  model.RenderPrevPage();
+  EXPECT_SUBSTR(form.innerHTML, "No such page found: [missing]. Check capitalization?");
+
+  model.GoToPage("a");
+  EXPECT_SUBSTR(form.innerHTML, "Page: a");
+  model.RenderNextPage();
+  EXPECT_SUBSTR(form.innerHTML, "No such page found: [missing]. Check capitalization?");
+
+  model.GoToPage("c");
+  EXPECT_SUBSTR(form.innerHTML, "Page: c");
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
 RunTestsRandomly();
 

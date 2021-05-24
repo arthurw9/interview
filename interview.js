@@ -850,11 +850,13 @@ interview.RandomIdentifier = function(prefix) {
 // |text| is the new model text to display.
 // This is useful in case of a parse error where the text in model is not updated.
 interview.DisplayError = function(model, err, text) {
-  if (!model.hasOwnProperty("dev_mode_textbox")) {
+  if (!model.hasOwnProperty("dev_mode_textbox") ||
+      !document.getElementById(model.dev_mode_textbox)) {
     interview.DeveloperMode(model);
   }
   var text_area = document.getElementById(model.dev_mode_textbox);
-  if (!model.hasOwnProperty("err_msg_div")) {
+  if (!model.hasOwnProperty("err_msg_div") ||
+      !document.getElementById(model.err_msg_div)) {
     model.err_msg_div = interview.RandomIdentifier("err_msg_div_");
     let err_msg_div = document.createElement("div");
     err_msg_div.id = model.err_msg_div;
@@ -1174,8 +1176,7 @@ interview.RenderModel = function(model, html_form) {
   if (page_info.hasOwnProperty("prev_page")) {
     var prev_page = page_info.prev_page;
     model.RenderPrevPage = function() {
-      model.current_page = prev_page;
-      interview.RenderModel(model, model.html_form);
+      model.GoToPage(prev_page);
     }
     str += "<button type='button' onclick='model.RenderPrevPage();'>Prev</button>";
   } else {
@@ -1185,8 +1186,7 @@ interview.RenderModel = function(model, html_form) {
   if (page_info.hasOwnProperty("next_page")) {
     var next_page = page_info.next_page;
     model.RenderNextPage = function() {
-      model.current_page = next_page;
-      interview.RenderModel(model, model.html_form);
+      model.GoToPage(next_page);
     }
     str += "<button type='button' onclick='model.RenderNextPage();'>Next</button>";
   } else {
