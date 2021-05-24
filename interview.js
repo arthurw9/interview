@@ -847,7 +847,9 @@ interview.RenderExpression = function(model, expr) {
 interview.RandomIdentifier = function(prefix) {
   return prefix + String(Math.random()).substr(2);
 }
-interview.DisplayError  = function(model, err, text) {
+// |text| is the new model text to display.
+// This is useful in case of a parse error where the text in model is not updated.
+interview.DisplayError = function(model, err, text) {
   if (!model.hasOwnProperty("dev_mode_textbox")) {
     interview.DeveloperMode(model);
   }
@@ -890,10 +892,13 @@ interview.Reload = function(model) {
   }
   var text=document.getElementById(model.dev_mode_textbox).value;
   var html_form = model.html_form;
-  try {  
-    let model2 = interview.Parse(text);
-    interview.RenderModel(model2, html_form);
-    return model2;
+  try {
+    // For some reason, introducing a different model var here breaks
+    // calling |Reload| after a runtime error. So reusing the existing
+    // model.
+    model = interview.Parse(text);
+    interview.RenderModel(model, html_form);
+    return model;
   } catch(err) {
     interview.DisplayError(model, err, text);
   }
@@ -1101,6 +1106,7 @@ interview.DeveloperMode = function(model) {
   str += "<button type='button' onclick='interview.SaveState(model)'>Save State</button>";
   str += "<button type='button' onclick='interview.ToJavaScript(model)'>To JS</button>";
   model.html_form.innerHTML = str;
+  model.html_form.model = model;
   var textbox = document.getElementById(dev_mode_textbox);
   textbox.value = model.text;
 }

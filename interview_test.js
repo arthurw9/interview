@@ -1715,5 +1715,30 @@ DefineTest("TestRuntimeErrorPageNotFound").func = function() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
+DefineTest("CanRestartAfterError").func = function() {
+  var form = document.createElement("form");
+  document.body.appendChild(form);
+  interview.RenderFromStr("", form);
+  // get the model from the form, like the run button does.
+  model = form.model;
+  // Introduce a runtime error
+  interview.DeveloperMode(model);
+  var textbox_id = model.dev_mode_textbox;
+  EXPECT_SUBSTR(textbox_id, "model_def_");
+  document.getElementById(textbox_id).value = "page bad goto p1";
+  interview.Reload(model);
+  EXPECT_SUBSTR(form.innerHTML, "No such page found: [p1]. Check capitalization?");
+  // get the model from the form, like the run button does.
+  model = form.model;
+  EXPECT_EQ(model.hasOwnProperty("dev_mode_textbox"), true);
+  textbox_id = model.dev_mode_textbox;
+  EXPECT_SUBSTR(textbox_id, "model_def_");
+  // Fix the error and run
+  document.getElementById(textbox_id).value = "page ok";
+  interview.Reload(model);
+  EXPECT_SUBSTR(form.innerHTML, "Page: ok");
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
 RunTestsRandomly();
 
