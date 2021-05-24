@@ -5,6 +5,7 @@ function ShowTestName() {
   div.innerHTML = current_test_name;
   document.body.appendChild(div);
   console.log(current_test_name);
+  failing_tests[current_test_name] = 1;
 }
 function Msg() {
   var div = document.createElement("div");
@@ -49,6 +50,7 @@ function EXPECT_NOT_SUBSTR(haystack, needle) {
 var tests = {};
 var async_tests_still_running = {};
 var current_test_name = "";
+var failing_tests = {};
 function DefineTest(name) {
   var t = {};
   if (tests.hasOwnProperty(name)) {
@@ -81,11 +83,13 @@ function CheckDone() {
     return;
   }
   Msg("Testing: DONE");
+  Msg("Failing Tests: " + Object.keys(failing_tests).length);
 }
 function RunTestsRandomly() {
   Msg("Testing: " + Object.keys(tests).length + " tests");
   Msg("Testing: START");
   var tests_to_run = [];
+  failing_tests = {};
   for(var name in tests) {
     tests_to_run.push(tests[name]);
   }
@@ -96,7 +100,7 @@ function RunTestsRandomly() {
     try {
       curr_test[0].func();
     } catch(err) {
-      FAIL(err);
+      FAIL(err.msg + " idx1:" + err.idx1 + " idx2:" + err.idx2);
     }
   }
   CheckDone();
@@ -106,7 +110,7 @@ function RunTest(name) {
   try {
     tests[name].func();
   } catch(err) {
-    FAIL(err);
+    FAIL(err.msg + " idx1:" + err.idx1 + " idx2:" + err.idx2);
   }
 }
 function TokenizeForTest(str) {
@@ -141,10 +145,10 @@ DefineTest("TestTokenizeNumbers").func = function() {
     tokens = model.tokens;
     FAIL("Should throw an error because of extra  dot");
   } catch(err) {
-    EXPECT_EQ(
-        err,
-        "ERROR: Unexpected second dot in number.\nidx = 7\n" +
-        "1020.33./* Here */9");
+    EXPECT_EQ(err.msg, "Unexpected second dot in number.");
+    EXPECT_EQ(err.idx1, 7);
+    EXPECT_EQ(err.idx2, 8);
+    EXPECT_EQ(model.text.substr(7,2), ".9");
   }
 
   model = {};
@@ -510,39 +514,45 @@ DefineTest("TestParseAndRunAssignmentsWithState").func = function() {
 }
 DefineTest("TestValidatingAssignments").func = function() {
   try {
-    model = interview.Parse("/* ; blah \" foo ; \" */; x=2;");
-    FAIL("/* ; blah \" foo ; \" */; x=2; Should throw an error.");
+    var str = "/* ; blah \" foo ; \" */; x=2;";
+    model = interview.Parse(str);
+    FAIL("Should throw an error.");
   } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Unexpected empty expression.\nidx = 22\n" +
-        "/* ; blah \" foo ; \" */;/* Here */ x=2;");
+    EXPECT_EQ(err.msg, "Unexpected empty expression.");
+    EXPECT_EQ(err.idx1, 22);
+    EXPECT_EQ(err.idx2, 23);
+    EXPECT_EQ(str.substr(20), "*/; x=2;");
   }
 
   try {
-    model = interview.Parse("/* ; blah \" foo ; \" */x=;");
+    var str = "/* ; blah \" foo ; \" */x=;";
+    model = interview.Parse(str);
     FAIL("/* ; blah \" foo ; \" */x=; Should throw an error.");
   } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Unexpected missing right operand.\nidx = 23\n" +
-        "/* ; blah \" foo ; \" */x=/* Here */;");
+    EXPECT_EQ(err.msg, "Unexpected missing right operand.");
+    EXPECT_EQ(err.idx1, 23);
+    EXPECT_EQ(err.idx2, 24);
+    EXPECT_EQ(str.substr(22), "x=;");
   }
 
   try {
-    model = interview.Parse("abc = ");
-    FAIL("abc =  Should throw an error.");
+    model = interview.Parse(" = abc");
+    FAIL("Should throw an error.");
   } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Unexpected missing right operand.\nidx = 4\n" +
-        "abc =/* Here */ ");
+    EXPECT_EQ(err.msg, "Can't add = after _start");
+    EXPECT_EQ(err.idx1, 1);
+    EXPECT_EQ(err.idx2, 2);
   }
 
   try {
-    model = interview.Parse("abc = ( 3 + 4;");
-    FAIL(" =  Should throw an error.");
+    var str = "abc = ( 3 + 4;";
+    model = interview.Parse(str);
+    FAIL("Should throw an error.");
   } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Unmatched parentheses.\nidx = 6\n" +
-        "abc = (/* Here */ 3 + 4;");
+    EXPECT_EQ(err.msg, "Unmatched parentheses.");
+    EXPECT_EQ(err.idx1, 6);
+    EXPECT_EQ(err.idx2, 7);
+    EXPECT_EQ(str.substr(6), "( 3 + 4;");
   }
 
   model = interview.Parse("/* Should empty expressions parse? lol */");
@@ -553,35 +563,35 @@ DefineTest("TestValidatingFormExpressions").func = function() {
     model = interview.Parse("Form form");
     FAIL("Form form Should throw an error.");
   } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Expected Identifier after form. Found form instead.\nidx = 0\n" +
-        "F/* Here */orm form");
+    EXPECT_EQ(err.msg, "Expected Identifier after form. Found form instead.");
+    EXPECT_EQ(err.idx1, 0);
+    EXPECT_EQ(err.idx2, 4);
   }
   try {
     model = interview.Parse("Form");
     FAIL("Form Should throw an error.");
   } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Expected identifier after form\nidx = 0\n" +
-        "F/* Here */orm");
+    EXPECT_EQ(err.msg, "Expected identifier after form");
+    EXPECT_EQ(err.idx1, 0);
+    EXPECT_EQ(err.idx2, 4);
   }
 
   try {
     model = interview.Parse("PAGE pAgE");
     FAIL("PAGE pAgE Should throw an error.");
   } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Expected Identifier after page. Found page instead.\nidx = 0\n" +
-        "P/* Here */AGE pAgE");
+    EXPECT_EQ(err.msg, "Expected Identifier after page. Found page instead.");
+    EXPECT_EQ(err.idx1, 0);
+    EXPECT_EQ(err.idx2, 4);
   }
 
   try {
     model = interview.Parse("PAGE");
     FAIL("PAGE Should throw an error.");
   } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Expected identifier after page\nidx = 0\n" +
-        "P/* Here */AGE");
+    EXPECT_EQ(err.msg, "Expected identifier after page");
+    EXPECT_EQ(err.idx1, 0);
+    EXPECT_EQ(err.idx2, 4);
   }
 }
 DefineTest("TestTokenizeIdDelimitedStrings").func = function() {
@@ -607,10 +617,9 @@ DefineTest("TestTokenizeIdDelimitedStrings").func = function() {
     tokens = TokenizeForTest("abc\"hello\n\"\n\rworld\"");
     FAIL("Foo!");
   } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Closing delimiter expected: [abc\"]\n" +
-        "idx = 0\n"+
-        "a/* Here */bc\"hello\n\"\n\rworld\"");
+    EXPECT_EQ(err.msg, "Closing delimiter expected: [abc\"]");
+    EXPECT_EQ(err.idx1, 0);
+    EXPECT_EQ(err.idx2, 4);
   }
 
   tokens = TokenizeForTest("abc\"\"\"\"\"\"abc\"");
@@ -1256,13 +1265,10 @@ DefineTest("TestGotoKeywordInHeader").func = function() {
     var model = interview.Parse(str);
     FAIL("Should throw an error because of goto in header but didn't.");
   } catch(err) {
-    EXPECT_EQ(err,
-        "ERROR: Cannot use the goto keyword in the model header.\n" +
-        "idx = 9\n" +
-        "button a\n" +
-        "g/* Here */oto b\n" +
-        "page a\n" +
-        "page b\n");
+    EXPECT_EQ(err.msg, "Cannot use the goto keyword in the model header.");
+    EXPECT_EQ(err.idx1, 9);
+    EXPECT_EQ(err.idx2, 13);
+    EXPECT_EQ(str.substr(9, 4), "goto");
   }
 }
 DefineTest("TestCreateMultipleCopiesOfForms").func = function() {
@@ -1695,6 +1701,19 @@ DefineTest("TestRenderFromURL").func = function() {
   let form = document.createElement("form");
   document.body.appendChild(form);
   let model = interview.RenderFromURL("test_remote_model.interview", form, onload);
+}
+DefineTest("TestRuntimeErrorPageNotFound").func = function() {
+  // Create an interview and go to a non-existent page.
+  // Verify it drops into developer mode and displays a descriptive error.
+  let form = document.createElement("form");
+  document.body.appendChild(form);
+  let str = "page A page B page C";
+  let model = interview.RenderFromStr(str, form);
+  EXPECT_SUBSTR(form.innerHTML, "Page: A");
+  model.GoToPage("D");
+  EXPECT_SUBSTR(form.innerHTML, "No such page found: [D]. Check capitalization?");
+  // For manual testing, don't remove the form element.
+  form.remove();
 }
 RunTestsRandomly();
 

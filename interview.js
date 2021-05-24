@@ -105,7 +105,7 @@ interview.ResetCopyId = function(model, expr, new_id) {
     return;
   }
   if (model.form_data.hasOwnProperty(new_id)) {
-    interview.ParseError("There is already another form copy with id " + new_id + ".",
+    interview.RuntimeError("There is already another form copy with id " + new_id + ".",
         expr.token, model);
   }
   model.form_data[form_name][new_id] = model.form_data[form_name][old_id];
@@ -140,12 +140,11 @@ interview.IncrementFormCopy = function(model, amount) {
   interview.UseCopyId(model, new_id);
 }
 interview.ParseError = function(msg, token, model) {
-  var idx = token[1];
-  var text = model.text;
-  throw "ERROR: " + msg +
-        "\nidx = " + idx +
-        "\n" + text.substr(0, idx + 1) + "/* Here */" +
-        text.substr(idx + 1);
+  let idx = token[1];
+  let len = token[2];
+  let annotated_code = model.text.substr(0, idx + 1) + "/* Here */" +
+        model.text.substr(idx + 1);
+  throw {msg: msg, idx1: idx, idx2: idx + len};
 }
 interview.ParseErrorPriorToken = function(msg, model) {
   var idx = model.token_idx - 1;
@@ -157,6 +156,15 @@ interview.ParseErrorPriorToken = function(msg, model) {
   } else {
     interview.ParseError(msg, [0,0,0], model);
   }
+}
+interview.RuntimeError = function(msg, token, model) {
+  // TODO: Unify ParseError and RuntimeError.
+  let err = {msg: msg, idx1: 0, idx2: 0};
+  if (token !== null) {
+    err.idx1 = token[1];
+    err.idx2 = token[1] + token[2];
+  }
+  throw err;
 }
 
 interview.unique = {};
@@ -252,6 +260,7 @@ interview.Tokenize = function(model) {
         // Find the next occurance of the delimiter.
         idx = text.indexOf(delim, idx);
         if (idx < 0) {
+          token[2] = delim_length;
           interview.ParseError("Closing delimiter expected: [" + delim + "]",
                      token, model)
         }
@@ -291,6 +300,7 @@ interview.Tokenize = function(model) {
           if (num_dots >= 2) {
             var token = [];
             token[1] = idx;
+            token[2] = 1;
             interview.ParseError("Unexpected second dot in number.", token, model);
           }
         }
@@ -747,7 +757,7 @@ interview.Evaluate = function(model, expr) {
     interview.ResetCopyId(model, expr, interview.Evaluate(model, expr.right));
     return "";
   }
-  interview.ParseError("Unexpected token during Evaluation.", expr.token, model);
+  interview.RuntimeError("Unexpected token during Evaluation.", expr.token, model);
 }
 interview.AddInitializer = function(model, initializer) {
   if (!model.initializer_list) {
@@ -837,6 +847,35 @@ interview.RenderExpression = function(model, expr) {
 interview.RandomIdentifier = function(prefix) {
   return prefix + String(Math.random()).substr(2);
 }
+interview.DisplayError  = function(model, err, text) {
+  if (!model.hasOwnProperty("dev_mode_textbox")) {
+    interview.DeveloperMode(model);
+  }
+  var text_area = document.getElementById(model.dev_mode_textbox);
+  if (!model.hasOwnProperty("err_msg_div")) {
+    model.err_msg_div = interview.RandomIdentifier("err_msg_div_");
+    let err_msg_div = document.createElement("div");
+    err_msg_div.id = model.err_msg_div;
+    text_area.insertAdjacentElement('beforebegin', err_msg_div);
+    err_msg_div.style.border = "5px solid red";
+    err_msg_div.style.padding = "5px";
+    err_msg_div.style.margin = "5px";
+  }
+  let err_msg_div = document.getElementById(model.err_msg_div);
+  err_msg_div.innerText = err.msg;
+  // Fill the text area up to the error location.
+  // scroll down as much as possible.
+  // record the scroll value.
+  // Then fill in all the text, select the error location, and
+  // scroll to the recorded location.
+  text_area.value = text.substr(0, err.idx1);
+  text_area.scrollTop = text_area.scrollHeight;
+  let scroll_top = text_area.scrollTop;
+  text_area.value = text;
+  text_area.setSelectionRange(err.idx1, err.idx2);
+  text_area.scrollTop = scroll_top;
+  text_area.focus();
+}
 interview.Reload = function(model) {
   gtag('event', 'screen_view', {
     'screen_name' : 'Reload'
@@ -851,8 +890,13 @@ interview.Reload = function(model) {
   }
   var text=document.getElementById(model.dev_mode_textbox).value;
   var html_form = model.html_form;
-  var model = interview.Parse(text);
-  interview.RenderModel(model, html_form);
+  try {  
+    let model2 = interview.Parse(text);
+    interview.RenderModel(model2, html_form);
+    return model2;
+  } catch(err) {
+    interview.DisplayError(model, err, text);
+  }
   return model;
 }
 interview.ZeroPrefix = function(num, digits) {
@@ -1078,6 +1122,10 @@ interview.RenderModel = function(model, html_form) {
     ++idx;
   }
   // Now run the page specific code.
+  if (model.current_page.length > 0 && !model.pages.hasOwnProperty(model.current_page)) {
+    interview.RuntimeError("No such page found: [" + model.current_page +
+                         "]. Check capitalization?", null, model);
+  }
   var page_info = model.pages[model.current_page];
   if (page_info == undefined) {
     // TODO: Is there any point in having a model without any pages?
@@ -1095,8 +1143,8 @@ interview.RenderModel = function(model, html_form) {
     if (expr.type == interview.GOTO_KEYWORD) {
       model.current_page = expr.right.right;
       if (!model.pages.hasOwnProperty(model.current_page)) {
-        interview.ParseErrorPriorToken("No such page found: " + model.current_page +
-                             ". Check capitalization?", model); 
+        interview.RuntimeError("No such page found: [" + model.current_page +
+                             "]. Check capitalization?", null, model); 
       }
       page_info = model.pages[model.current_page];
       // +1 to skip past the page expression itself.
@@ -1108,12 +1156,12 @@ interview.RenderModel = function(model, html_form) {
   }
   // GoToPage is used by the button keyword.
   model.GoToPage = function(page) {
-    if (!model.pages.hasOwnProperty(page)) {
-      interview.ParseErrorPriorToken("No such page found: " + page +
-                           ". Check capitalization?", model); 
-    }
     model.current_page = page;
-    interview.RenderModel(model, model.html_form);
+    try {
+      interview.RenderModel(model, model.html_form);
+    } catch(err) {
+      interview.DisplayError(model, err, model.text);
+    }
   }
   // Render the navigation buttons.
   str += "<p>";
@@ -1198,8 +1246,12 @@ interview.Parse = function(text) {
   return model;
 }
 interview.RenderFromStr = function(str, html_form) {
-  var model = interview.Parse(str);
-  interview.RenderModel(model, html_form);
+  try {
+    var model = interview.Parse(str);
+    interview.RenderModel(model, html_form);
+  } catch(err) {
+    interview.DisplayError(model, err, text);
+  }
   return model;
 }
 interview.RenderFromURL = function(url, html_form, onload) {
