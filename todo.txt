@@ -20,8 +20,6 @@ Database Features:
 - Create foreign key constraints between forms.
 
 IDE features:
-- Put line numbers in the Developer text box.
-- Make parse and runtime error messages show up in the Developer text box.
 - Create a graphical designer that creates interview code.
 
 Tutorial
