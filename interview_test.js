@@ -108,11 +108,13 @@ function RunTestsRandomly() {
 }
 function RunTest(name) {
   current_test_name = name;
+  Msg("Testing: " + name);
   try {
     tests[name].func();
   } catch(err) {
     FAIL(err.msg + " idx1:" + err.idx1 + " idx2:" + err.idx2);
   }
+  CheckDone();
 }
 function TokenizeForTest(str) {
   var model = {};
@@ -1701,6 +1703,25 @@ DefineTest("TestRenderFromURL").func = function() {
   document.body.appendChild(form);
   let model = interview.RenderFromURL("test_remote_model.interview", form, onload);
 }
+DefineTest("NotFoundInRenderFromURL").func = function() {
+  let test_name = AsyncTest();
+  let onLoad = function(model) {
+    current_test_name = test_name;
+    Fail("Should not call onLoad for a missing file.");
+    AsyncDone(test_name);
+  }
+  let onFail = function(jsError) {
+    current_test_name = test_name;
+    EXPECT_EQ(jsError.message, "Failed to read url: [intentionally_not_found.interview]");
+    // For manual testing, don't remove the form element.
+    form.remove();
+    AsyncDone(test_name);
+  }
+  let form = document.createElement("form");
+  document.body.appendChild(form);
+  let model = interview.RenderFromURL("intentionally_not_found.interview",
+                                      form, onLoad, onFail);
+}
 DefineTest("TestRuntimeErrorPageNotFound").func = function() {
   // Create an interview and go to a non-existent page.
   // Verify it drops into developer mode and displays a descriptive error.
@@ -1802,6 +1823,28 @@ page X page Y page Z
       "page a x = 7; newcopy x=8; form foo x=9;" +
       " load \"test_remote_model.interview\"",
       form, onload);
+}
+DefineTest("LoadMissingFile").func = function() {
+  let test_name = AsyncTest();
+  let form = document.createElement("form");
+  document.body.appendChild(form);
+  let onDone = function(model) {
+    current_test_name = test_name;
+    EXPECT_SUBSTR(form.innerHTML,
+                  "Failed to read url: [intentionally_not_found_2.interview]");
+    EXPECT_SUBSTR(model.dev_mode_textbox, "model_def_");
+    let text_box = document.getElementById(model.dev_mode_textbox);
+    let idx1 = text_box.selectionStart;
+    let idx2 = text_box.selectionEnd;
+    EXPECT_SUBSTR(text_box.value.substring(idx1, idx2), 
+              "\"intentionally_not_found_2.interview\"");
+    // For manual testing, don't remove the form element.
+    form.remove();
+    AsyncDone(test_name);
+  }
+  interview.RenderFromStr(
+      "load \"intentionally_not_found_2.interview\"",
+      form, onDone);
 }
 RunTestsRandomly();
 

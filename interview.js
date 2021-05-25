@@ -10,7 +10,6 @@ gtag = window.gtag || function() {dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-8KY282RL6T', { 'app_name': 'Interview' });
 // A top level object for this library.
-// TODO: Move all symbols under this object.
 var interview = {};
 interview.InitForms = function(model) {
   // model.form_info[form_name] =
@@ -804,8 +803,9 @@ interview.RenderSelect = function(model, select_expr) {
   interview.UseCopyId(model, original_copy_id);
   return str;
 }
-interview.LoadKeepingData = function(url, source_model, html_form, onload) {
-  let render = function(reponse_text) {
+interview.LoadKeepingData = function(expr, source_model, html_form, onDone) {
+  let url = interview.Evaluate(source_model, expr.right);
+  let Render = function(reponse_text) {
     try {
       var model = interview.Parse(reponse_text);
       interview.CopyData(source_model, model);
@@ -813,19 +813,26 @@ interview.LoadKeepingData = function(url, source_model, html_form, onload) {
     } catch(err) {
       interview.DisplayError(model, err, reponse_text);
     } finally {
-      onload(model);
+      onDone(model);
     }
   }
-  interview.TextFromURL(url, render);
+  let HandleFailure = function(jsError) {
+    let url_token = expr.right.token;
+    let idx1 = url_token[1];
+    let idx2 = url_token[1] + url_token[2];
+    let err = {msg: jsError.message, idx1: idx1, idx2: idx2};
+    interview.DisplayError(source_model, err, source_model.text);
+    onDone(source_model);
+  }
+  interview.TextFromURL(url, Render, HandleFailure);
 }
-// onload is only used when the model loads a remote resource.
-interview.RenderExpression = function(model, expr, onload) {
-  if (onload == null) {
-    onload = function(model){};
+// |onDone| is only called when the model loads a remote resource.
+interview.RenderExpression = function(model, expr, onDone) {
+  if (onDone == null) {
+    onDone = function(model){};
   }
   if (expr.type == interview.LOAD_KEYWORD) {
-    let url = interview.Evaluate(model, expr.right);
-    interview.LoadKeepingData(url, model, model.html_form, onload);
+    interview.LoadKeepingData(expr, model, model.html_form, onDone);
     return "Loading...";
   }
   if (expr.type == interview.PRINT_KEYWORD) {
@@ -1048,6 +1055,7 @@ interview.SaveState = function(model) {
   new_code_textbox.value = new_model_text;
 }
 interview.ToJavaScript = function(model) {
+  // TODO: Delete this code. It's not useful anymore.
   gtag('event', 'screen_view', {
     'screen_name' : 'ToJs'
   });
@@ -1142,9 +1150,9 @@ interview.DeveloperMode = function(model) {
   var textbox = document.getElementById(dev_mode_textbox);
   textbox.value = model.text;
 }
-interview.RenderModel = function(model, html_form, onload) {
-  if (onload == null) {
-    onload = function(model){};
+interview.RenderModel = function(model, html_form, onDone) {
+  if (onDone == null) {
+    onDone = function(model){};
   }
   interview.SetForm(model, "scratch");
   html_form.model = model;
@@ -1160,13 +1168,13 @@ interview.RenderModel = function(model, html_form, onload) {
     if ([interview.PAGE_KEYWORD].includes(expr.type)) {
       break;
     }
-    str += interview.RenderExpression(model, expr, onload);
+    str += interview.RenderExpression(model, expr, onDone);
     ++idx;
   }
   // Now run the page specific code.
   if (model.current_page.length > 0 && !model.pages.hasOwnProperty(model.current_page)) {
     interview.RuntimeError("No such page found: [" + model.current_page +
-                         "]. Check capitalization?", null, model);
+                         "]. Check capitalization?", expr.token, model);
   }
   var page_info = model.pages[model.current_page];
   if (page_info == undefined) {
@@ -1186,14 +1194,14 @@ interview.RenderModel = function(model, html_form, onload) {
       model.current_page = expr.right.right;
       if (!model.pages.hasOwnProperty(model.current_page)) {
         interview.RuntimeError("No such page found: [" + model.current_page +
-                             "]. Check capitalization?", null, model); 
+                             "]. Check capitalization?", expr.right.token, model); 
       }
       page_info = model.pages[model.current_page];
       // +1 to skip past the page expression itself.
       idx = page_info.start_expr_idx + 1;
       continue;
     }
-    str += interview.RenderExpression(model, expr, onload);
+    str += interview.RenderExpression(model, expr, onDone);
     ++idx;
   }
   // GoToPage is used by the button keyword.
@@ -1285,41 +1293,49 @@ interview.Parse = function(text) {
   model.current_page = interview.FindFirstPage(model);
   return model;
 }
-interview.RenderFromStr = function(str, html_form, onload) {
-  if (onload == null) {
-    onload = function(model){};
+// |onDone| is called if a remote model is loaded on first rendering.
+// It is called in either case of success or failure of the remote url.
+interview.RenderFromStr = function(str, html_form, onDone) {
+  if (onDone == null) {
+    onDone = function(model){};
   }
   try {
     var model = interview.Parse(str);
-    interview.RenderModel(model, html_form, onload);
+    interview.RenderModel(model, html_form, onDone);
   } catch(err) {
-    interview.DisplayError(model, err, text);
+    interview.DisplayError(model, err, str);
   }
   return model;
 }
-// |onload|(text) is called once the |url| is loaded.
-interview.TextFromURL = function(url, onload) {
+// |onLoad|(text) is called once the |url| is loaded.
+interview.TextFromURL = function(url, onLoad, onFail) {
   fetch(url)
     .then(function(response) {
             if (!response.ok) {
-              console.log(response);
+              throw Error("Failed to read url: [" + url + "]");
             }
+            // TODO: What if it's not text? Write a unit test to see what happens.
             return response.text();
           })
     .then(function(reponse_text) {
-            onload(reponse_text);
+            onLoad(reponse_text);
           })
-    .catch (error => console.log('Error:' + error));
+    .catch(function(error) {
+             onFail(error);
+           });
 }
 // |onload|(model) is called once the new model from |url| is rendered.
-interview.RenderFromURL = function(url, html_form, onload) {
-  if (onload == null) {
-    onload = function(model){};
+interview.RenderFromURL = function(url, html_form, onLoad, onFail) {
+  if (onLoad == null) {
+    onLoad = function(model){};
   }
-  let render = function(reponse_text) {
+  if (onFail == null) {
+    onFail = function(jsError){};
+  }
+  let Render = function(reponse_text) {
     let model = interview.RenderFromStr(reponse_text, html_form);
-    onload(model);
+    onLoad(model);
   }
-  interview.TextFromURL(url, render);
+  interview.TextFromURL(url, Render, onFail);
 }
 

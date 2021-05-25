@@ -1,0 +1,431 @@
+/* This top part of the interview runs on every page */
+
+form Interview
+
+button Home
+print ""
+ 
+page Restore___2021_04_30___15_44_54
+  form Interview
+  internal_resetcopyid 0
+  num = 42;
+  str = "Life, the universe, and everything.";
+  z = "str = Life, the universe, and everything.";
+  usecopy 0 /* last_known_copy_id */
+  form favorite_food
+  internal_resetcopyid 0
+  name = "Jerry";
+  favorite_food = "jello";
+  z = "Jerry likes jello.";
+  newcopy
+  internal_resetcopyid 1
+  name = "Charles";
+  favorite_food = "Chicken";
+  z = "Charles likes Chicken.";
+  newcopy
+  internal_resetcopyid 2
+  name = "Peter";
+  favorite_food = "potatoes";
+  z = "Peter likes potatoes.";
+  newcopy
+  internal_resetcopyid 3
+  name = "Mary";
+  favorite_food = "meatballs";
+  z = "Mary likes meatballs.";
+  usecopy 2 /* last_known_copy_id */
+  form scratch
+  internal_resetcopyid 0
+  usecopy 0 /* last_known_copy_id */
+  form Interview /* last_known_form */
+  goto Home /* last_known_page */
+
+page Home
+  print "<h1>Interview</h1>"
+  print "A simple language to build interview style apps."
+  button GettingStarted
+  button HelloWorld
+  button Concepts
+
+page GettingStarted
+  print "<h1>Getting Started</h1>"
+  print "Press the Developer button and you will
+      see all the interview language source code that 
+      makes this site."
+  print "From there, press Run to start the site all
+      over again."
+  button GettingStarted2
+
+page GettingStarted2
+  print "<h1>Getting Started</h1>"
+  print "Things to do: Open two windows to this
+      website."
+  print "That will let you see this tutorial in one
+      window and make changes in the other."
+  print "Now check out the Hello World example!"
+  button HelloWorld
+
+page HelloWorld
+  print "<h1>Hello World</h1>"
+  print "Let's make our first interview!"
+  print "Press Developer and then clear all the code."
+  print "Enter the following code:"
+  print zz"
+      <pre style="border: 1px solid black;">
+      page first
+        print "&lt;h1&gt;Hello World&lt;/h1&gt;"
+        print "Congrat's! You made your first
+            Interview"
+        print "It has one page with two print
+            statements. The first print statement has
+            some HTML!"
+      </pre>zz"
+  print "Then press run."
+  button Concepts
+
+page Concepts
+  print "<h1>Concepts</h1>"
+  button Page_Keyword
+  print ""
+  button Print_Keyword
+  print ""
+  button Button_Keyword
+  print ""
+  button Input_Some_Variables
+  print ""
+  button Input_Keyword
+  print ""
+  button identifier
+  print ""
+  button string
+  print ""
+  button Header_Formulas
+  print ""
+  button Form_Keyword
+  print ""
+  button Form_Copies
+  print ""
+  button Select_Keyword
+
+page Page_Keyword
+  print "<h1>Page Keyword</h1>"
+  print "An interview app is divided into pages. 
+      One page is visible at a time. Each page must have
+      a unique name."
+  print x"Try it:
+      <pre style="border: 1px solid black;">
+      page a
+      page b
+      page c
+      </pre>x"
+  print "This creates three empty pages."
+  print "Use the next and prev buttons to switch between pages."
+  button Concepts
+
+page identifier
+  print "TODO: describe identifiers."
+  button Concepts
+
+page string
+  print "<h1>Strings</h1>"
+  print z"A string is any list of characters or numbers
+      enclosed within quotes. For example: "Hello" is
+      a string.z"
+  print "Strings can be printed."
+  print "Want to print quotes themselves?
+      The interview language has a special quote syntax.
+      Any identifier with a quote at the end is a quote.
+      The start and end quote must be the same.
+      For example, here is another string:"
+  print unique"zzz"Hello world.zzz".unique"
+  print x"The zzz" in this string is the quote.x"
+  print "Just use a unique identifier and you can
+      easily include quotes inside strings."
+  print x"Try it:
+      <pre style="border: 1px solid black;">
+      page foo
+      print zzz"
+        Hi. We can use "quotes" here. We can also use
+        zzz here. But if we put them together then it
+        becomes a quote and ends the string.
+        zzz"
+      </pre>
+      x"
+  button Concepts
+
+page Print_Keyword
+  print "<h1>Print Keyword</h1>"
+  print "The print keyword takes a single argument:
+      Either a string literal or a variable. It can't
+      take an expression."
+  print "Try the HelloWorld interview to see an 
+      example."
+  button HelloWorld
+  print ""
+  button Concepts
+
+page Button_Keyword
+  print "<h1>Button Keyword</h1>"
+  print "The button keyword takes a single
+      argument. It's an identifier but it's value is not
+      evaluated. The name of the identifier must match
+      the name of a page exactly with uppercase and
+      lowercase treated differently." 
+  print "When the user presses a button, the interview
+      continues on that page."
+  print z"Here is an example to try:
+      <pre style="border: 1px solid black;">
+      page a
+        print "Hi! This is page a."
+        button a
+        button b
+        button c
+      page b
+        print "Hi! This is page b."
+        button a
+        button b
+        button c
+      page c
+        print "Hi! This is page c."
+        button a
+        button b
+        button c
+      </pre>z"
+  button Concepts
+
+page Input_Keyword
+  print "<h1>Input Keyword</h1>"
+  print z"input takes an identifier as a single
+      argument.  It lets the user enter values. The
+      value is updated only after the user leaves the
+      input field. But the page is not reloaded
+      automatically when the value changes. Things that
+      were already printed, don't update until you
+      reload the page. Try it:
+      <pre style="border: 1px solid black;">
+      form foo
+      page refresh
+        print "line1:"
+        input line1
+        print "line2:"
+        input line2
+ 
+        z = "Currently line1 = " + line1;
+        print z
+        z = "Currently line2 = " + line2;
+        print z
+
+        z = "line1 + line2 = " + (line1 + line2);
+        print z
+        print ""
+        button refresh
+    </pre>z"
+  button Concepts
+
+page Header_Formulas
+  print "<h1>Header Formulas</h1>"
+  print "The top part of the code, before any page
+     statements, has the header formulas. This section runs
+     on every page before any other code. You can put
+     formulas there and also visual elements like buttons
+     or print statements. These will display on top of
+     every page."
+  print "It's good practice to put all formulas into this
+     header section. This is because putting formulas on the
+     different pages can be repetitive and error prone.
+     It's easy to accidentally miss putting an important
+     formula on some pages. Putting all assignments in the
+     header simplifies this issue. The formulas always run
+     before each page so they are always up to date."
+  button Concepts
+
+page Form_Keyword
+  print "<h1>Form Keyword</h1>"
+  print "The form keyword is a container. All data
+      lives in the context of a form. If you don't
+      create a form, then any variables you set will
+      live in the default form with empty name. The same
+      variable can have different values in the
+      context of different forms. For example:"
+  print z"<pre style="border: 1px solid black;">
+      button init
+      button pg_a
+      button pg_b
+      button pg_c 
+      page init
+        form a
+          line_1 = "inside form a";
+        form b
+          line_1 = "inside form b";
+      page pg_a
+        form a
+          print line_1
+      page pg_b
+        form b
+          print line_1
+      page pg_c
+        print line_1
+      </pre>z"
+  print "If you don't specify the form, like on pg_c
+      above, then you get whatever form was last used."
+  button Concepts
+
+page Form_Copies
+  print "<h1>Form Copies</h1>"
+  print "Each form can have one or more copies with
+      different data."
+  print "For example a single US 1040 tax form may have
+      multiple W2 forms associated with it. We call these
+      form copies."
+  print "The form keyword automatically creates a first
+      form copy and makes it the current copy."
+  print "Every form has a current copy."
+  print "The newcopy keyword is used to make another
+      copy."
+  print "The new form copy starts empty with no data and
+      becomes the current copy."
+  print "The current copy can be changed with the nextcopy
+      and prevcopy keywords."
+  print "Note prevcopy and nextcopy will stop at the first
+      and last form copies. You need to use newcopy to
+      make a new copy."
+  print z"Try it:
+      <pre style="border: 1px solid black;">
+      form US1040
+      
+      page edit_w2
+      form W2
+      print "Employer"
+      input employer
+      print ""
+      button prev_w2
+      button next_w2
+      print ""
+      button new_w2
+      
+      page next_w2
+      form W2
+      nextcopy
+      goto edit_w2
+      
+      page prev_w2
+      form W2
+      prevcopy
+      goto edit_w2
+      
+      page new_w2
+      form W2
+      newcopy
+      goto edit_w2
+      </pre>z"
+
+page Initialize_Some_Variables
+  num = 1;
+  str = "Hello World ";
+  print "Yay! You initialized some variables."
+  print "num = 1;"
+  print z"str = "Hello World";z"
+  print ""
+  button Initialize_Some_Variables
+  button Modify_Some_Variables
+  button Print_Some_Variables
+  button Input_Some_Variables
+
+page Print_Some_Variables
+  z = "num = " + num;
+  print z
+  z = "str = " + str;
+  print z
+  print ""
+  button Initialize_Some_Variables
+  button Modify_Some_Variables
+  button Print_Some_Variables
+  button Input_Some_Variables
+
+page Modify_Some_Variables
+  num = num + num;
+  str = str + str;
+  print "Yay! You modified some variables."
+  print "num = num + num;"
+  print "str = str + str;"
+  print ""
+  button Initialize_Some_Variables
+  button Modify_Some_Variables
+  button Print_Some_Variables
+  button Input_Some_Variables
+
+page Input_Some_Variables
+  print "num: "
+  input num
+  print "str:"
+  input str
+  print ""
+  button Initialize_Some_Variables
+  button Modify_Some_Variables
+  button Print_Some_Variables
+  button Input_Some_Variables
+
+page Select_Keyword
+  print "The select keyword lets you display a table 
+        with data from copies of the current form.
+        It also let's the end user select a new current
+        copy by clicking on a row. For more info on form
+        copies See:"
+  button Form_Copies
+  print z"The select statement lets you display as many
+        columns as needed. Each column is separated by
+        a comma. Then the a semicolon ; is needed to
+        end the statement.
+        <pre style="border: 1px solid black;">
+        select a, b, c;
+        </pre>
+        Any expression can be used as a column.
+        For example:
+        <pre style="border: 1px solid black;">
+        select 
+            name + " likes",
+            favorite_food + " a lot.";
+        </pre>
+        Try the favorite food demo below. To see the
+        code that makes it work, press the developer
+        button and search for favorite_food_demoz"
+  button favorite_food_demo
+
+page new_favorite_food
+  form favorite_food
+  newcopy
+  name = "";
+  favorite_food = "";
+  goto favorite_food_demo
+
+page edit_favorite_food
+  form favorite_food
+  print "name"
+  input name
+  print "favorite_food"
+  input favorite_food
+  print "Go back to the list:"
+  button favorite_food_demo
+
+page prev_favorite_food
+  form favorite_food
+  prevcopy
+  goto favorite_food_demo
+
+page next_favorite_food
+  form favorite_food
+  nextcopy
+  goto favorite_food_demo
+  
+page favorite_food_demo
+  form favorite_food  
+  select 
+      name + " likes",
+      favorite_food + " a lot.";
+  z = "<big><b>" + name + "</b></big> likes <big><b>" +
+      favorite_food + "</b></big>.";
+  print z
+  button edit_favorite_food
+  button new_favorite_food
+  print ""
+  button prev_favorite_food
+  button next_favorite_food

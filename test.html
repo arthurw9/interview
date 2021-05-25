@@ -3,17 +3,20 @@
 <head>
 <link rel="stylesheet" href="style.css?q=3">
 <script>
-var LoadScript = function(path) {
-  var url = path + "?z=" + Math.random();
+function NoCache(url) {
+  var url_no_cache = url + "?z=" + Math.random();
+  return url_no_cache;
+}
+var LoadScript = function(url) {
   var script = document.createElement("script");
   script.src = url;
   document.head.appendChild(script);
   console.log("loading", url);
   return script;
 }
-LoadScript("interview.js").onload = function() {
+LoadScript(NoCache("interview.js")).onload = function() {
   // Start testing only after the script is loaded.
-  LoadScript("interview_test.js");
+  LoadScript(NoCache("interview_test.js"));
 }
 </script>
 </head>
