@@ -1,5 +1,6 @@
 Forms:
 - Get values from a different form and/or copy.
+- All pages should start on the current copy of the scratch form.
 
 GUI:
 - Make the navigation and developer buttons explicit commands: NextPage, PrevPage, Developer
@@ -12,6 +13,9 @@ Language:
 - if statements.
 - loops.
 - Allow reading additional code from other files while retaining form/data state.
+- Display a PDF
+- List PDF form fields
+- Fill out a PDF form and display it.
 
 Database Features:
 - Create sum function to sum values from all copies of a form.
