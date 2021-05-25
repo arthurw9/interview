@@ -11,7 +11,6 @@ Language:
 - Delete form copy
 - if statements.
 - loops.
-- Allow reading additional code from other files while retaining form/data state.
 - Display a PDF
 - List PDF form fields
 - Fill out a PDF form and display it.
@@ -29,4 +28,6 @@ Tutorial
 - Split the Tutorial into separate pages with small bits of the model in each page.
 - Create example applications in separate pages.
 - Describe the _id keyword in the tutorial.
+- Describe "load" in the tutorial: Loads a remote interview but retains existing data.
+- Add a section to the tutorial about how to use Javascript to run interviews.
 

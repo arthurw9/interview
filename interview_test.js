@@ -1763,5 +1763,45 @@ DefineTest("DisplayErrorsWithDefaultNavigation").func = function() {
   // For manual testing, don't remove the form element.
   form.remove();
 }
+DefineTest("LoadModelKeepingSavedData").func = function() {
+  let test_name = AsyncTest();
+  let form = document.createElement("form");
+  document.body.appendChild(form);
+  let onload = function(model) {
+    current_test_name = test_name;
+    EXPECT_SUBSTR(form.innerHTML, "Page: X");
+    // Save State to see the data that needs verification.
+    interview.DeveloperMode(model);
+    model.dev_mode_start_time = new Date("2021-04-17T13:51:03");
+    interview.SaveState(model);
+    var text=document.getElementById(model.dev_mode_textbox).value;
+    var expected_model =
+      `/* used in unit test to check if remote models can be loaded */
+page Restore___2021_04_17___13_51_03
+  form foo
+  internal_resetcopyid 0
+  x = 9;
+  usecopy 0 /* last_known_copy_id */
+  form scratch
+  internal_resetcopyid 0
+  x = 7;
+  newcopy
+  internal_resetcopyid 1
+  x = 8;
+  usecopy 1 /* last_known_copy_id */
+  goto X /* last_known_page */
+
+page X page Y page Z
+`;
+    EXPECT_EQ(text, expected_model);
+    // For manual testing, don't remove the form element.
+    form.remove();
+    AsyncDone(test_name);
+  }
+  let model = interview.RenderFromStr(
+      "page a x = 7; newcopy x=8; form foo x=9;" +
+      " load \"test_remote_model.interview\"",
+      form, onload);
+}
 RunTestsRandomly();
 

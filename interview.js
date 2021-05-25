@@ -187,6 +187,7 @@ interview.CheckUniqueKeyword = function(kwd) {
   return kwd;
 }
 
+interview.LOAD_KEYWORD = interview.CheckUniqueKeyword("load");
 interview.PAGE_KEYWORD = interview.CheckUniqueKeyword("page");
 interview.PRINT_KEYWORD = interview.CheckUniqueKeyword("print");
 interview.BUTTON_KEYWORD = interview.CheckUniqueKeyword("button");
@@ -405,8 +406,8 @@ interview.HandleNewNode = function(model, curr, new_node) {
   if ([interview.START].includes(curr.type)) {
     if ([interview.FORM_KEYWORD, interview.PAGE_KEYWORD, interview.PRINT_KEYWORD,
          interview.BUTTON_KEYWORD, interview.INPUT_KEYWORD, interview.GOTO_KEYWORD,
-         interview.SETCOPYID_KEYWORD, interview.USECOPY_KEYWORD, interview.SELECT_KEYWORD
-         ].includes(new_node.type)) {
+         interview.SETCOPYID_KEYWORD, interview.USECOPY_KEYWORD, interview.SELECT_KEYWORD,
+         interview.LOAD_KEYWORD].includes(new_node.type)) {
       if (interview.GOTO_KEYWORD == new_node.type && Object.keys(model.pages).length == 0) {
         interview.ParseError("Cannot use the goto keyword in the model header.",
                    new_node.token, model);
@@ -487,7 +488,7 @@ interview.HandleNewNode = function(model, curr, new_node) {
                model);
   }
   if ([interview.PRINT_KEYWORD, interview.SETCOPYID_KEYWORD,
-       interview.USECOPY_KEYWORD].includes(curr.type)) {
+       interview.USECOPY_KEYWORD, interview.LOAD_KEYWORD].includes(curr.type)) {
     if ([interview.STRING_TOKEN, interview.IDENTIFIER_TOKEN,
         interview.NUMBER_TOKEN].includes(new_node.type)) {
       interview.AppendBelowRight(curr, new_node);
@@ -584,6 +585,12 @@ interview.ValidateExpression = function(model, expr) {
       return;
     }
     interview.ParseErrorPriorToken("Expected identifier after " + expr.type, model);
+  }
+  if (expr.type == interview.LOAD_KEYWORD) {
+    if (expr.right != undefined && interview.STRING_TOKEN == expr.right.type) {
+      return;
+    }
+    interview.ParseErrorPriorToken("Expected string after load.", model);
   }
   if ([interview.PRINT_KEYWORD, interview.SETCOPYID_KEYWORD,
        interview.USECOPY_KEYWORD].includes(expr.type)) {
@@ -797,7 +804,30 @@ interview.RenderSelect = function(model, select_expr) {
   interview.UseCopyId(model, original_copy_id);
   return str;
 }
-interview.RenderExpression = function(model, expr) {
+interview.LoadKeepingData = function(url, source_model, html_form, onload) {
+  let render = function(reponse_text) {
+    try {
+      var model = interview.Parse(reponse_text);
+      interview.CopyData(source_model, model);
+      interview.RenderModel(model, html_form);
+    } catch(err) {
+      interview.DisplayError(model, err, reponse_text);
+    } finally {
+      onload(model);
+    }
+  }
+  interview.TextFromURL(url, render);
+}
+// onload is only used when the model loads a remote resource.
+interview.RenderExpression = function(model, expr, onload) {
+  if (onload == null) {
+    onload = function(model){};
+  }
+  if (expr.type == interview.LOAD_KEYWORD) {
+    let url = interview.Evaluate(model, expr.right);
+    interview.LoadKeepingData(url, model, model.html_form, onload);
+    return "Loading...";
+  }
   if (expr.type == interview.PRINT_KEYWORD) {
     return "<p>" + interview.Evaluate(model, expr.right) + "</p>";
   }
@@ -902,6 +932,12 @@ interview.Reload = function(model) {
     interview.DisplayError(model, err, text);
   }
   return model;
+}
+interview.CopyData = function(source_model, dest_model) {
+  dest_model.form_info = JSON.parse(JSON.stringify(source_model.form_info));
+  dest_model.form_data = JSON.parse(JSON.stringify(source_model.form_data));
+  dest_model.data = JSON.parse(JSON.stringify(source_model.data));
+  dest_model.curr_form = JSON.parse(JSON.stringify(source_model.curr_form));
 }
 interview.ZeroPrefix = function(num, digits) {
   if (digits == null) {
@@ -1106,7 +1142,10 @@ interview.DeveloperMode = function(model) {
   var textbox = document.getElementById(dev_mode_textbox);
   textbox.value = model.text;
 }
-interview.RenderModel = function(model, html_form) {
+interview.RenderModel = function(model, html_form, onload) {
+  if (onload == null) {
+    onload = function(model){};
+  }
   interview.SetForm(model, "scratch");
   html_form.model = model;
   model.html_form = html_form;
@@ -1121,7 +1160,7 @@ interview.RenderModel = function(model, html_form) {
     if ([interview.PAGE_KEYWORD].includes(expr.type)) {
       break;
     }
-    str += interview.RenderExpression(model, expr);
+    str += interview.RenderExpression(model, expr, onload);
     ++idx;
   }
   // Now run the page specific code.
@@ -1154,7 +1193,7 @@ interview.RenderModel = function(model, html_form) {
       idx = page_info.start_expr_idx + 1;
       continue;
     }
-    str += interview.RenderExpression(model, expr);
+    str += interview.RenderExpression(model, expr, onload);
     ++idx;
   }
   // GoToPage is used by the button keyword.
@@ -1246,19 +1285,20 @@ interview.Parse = function(text) {
   model.current_page = interview.FindFirstPage(model);
   return model;
 }
-interview.RenderFromStr = function(str, html_form) {
+interview.RenderFromStr = function(str, html_form, onload) {
+  if (onload == null) {
+    onload = function(model){};
+  }
   try {
     var model = interview.Parse(str);
-    interview.RenderModel(model, html_form);
+    interview.RenderModel(model, html_form, onload);
   } catch(err) {
     interview.DisplayError(model, err, text);
   }
   return model;
 }
-interview.RenderFromURL = function(url, html_form, onload) {
-  if (onload == null) {
-    onload = function(model){};
-  }
+// |onload|(text) is called once the |url| is loaded.
+interview.TextFromURL = function(url, onload) {
   fetch(url)
     .then(function(response) {
             if (!response.ok) {
@@ -1267,9 +1307,19 @@ interview.RenderFromURL = function(url, html_form, onload) {
             return response.text();
           })
     .then(function(reponse_text) {
-            var model = interview.RenderFromStr(reponse_text, html_form);
-            onload(model);
+            onload(reponse_text);
           })
     .catch (error => console.log('Error:' + error));
+}
+// |onload|(model) is called once the new model from |url| is rendered.
+interview.RenderFromURL = function(url, html_form, onload) {
+  if (onload == null) {
+    onload = function(model){};
+  }
+  let render = function(reponse_text) {
+    let model = interview.RenderFromStr(reponse_text, html_form);
+    onload(model);
+  }
+  interview.TextFromURL(url, render);
 }
 
