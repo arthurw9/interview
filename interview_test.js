@@ -14,12 +14,12 @@ function Msg() {
   console.log(Array.prototype.join.call(arguments, ""));
 }
 function MsgTrace() {
-  var div = document.createElement("div");
-  div.innerHTML = Array.prototype.join.call(arguments, "");
-  document.body.appendChild(div);
   var pre = document.createElement("pre");
-  pre.innerHTML = Error().stack;
+  pre.innerHTML = Array.prototype.join.call(arguments, "");
   document.body.appendChild(pre);
+  var pre2 = document.createElement("pre");
+  pre2.innerHTML = Error().stack;
+  document.body.appendChild(pre2);
   console.trace(Array.prototype.join.call(arguments, ""));
 }
 function FAIL(msg) {
@@ -100,7 +100,8 @@ function RunTestsRandomly() {
     try {
       curr_test[0].func();
     } catch(err) {
-      FAIL(err.msg + " idx1:" + err.idx1 + " idx2:" + err.idx2);
+      FAIL(err.msg + " idx1:" + err.idx1 + " idx2:" + err.idx2 +
+           "\njsStack: " + err.jsStack);
     }
   }
   CheckDone();
@@ -1182,6 +1183,7 @@ DefineTest("TestMultipleCopiesOfFormsComplexLowLevel").func = function() {
 }
 DefineTest("TestBasicForms").func = function() {
   var str = "button init button a button b button c\n" +
+    "line_1 = \"Current Form: scratch\";" +
     "page init\n" +
     "  form one\n" +
     "    line_1 = \"Current Form: one\";\n" +
@@ -1210,16 +1212,15 @@ DefineTest("TestBasicForms").func = function() {
   model.GoToPage("b");
   EXPECT_EQ(model.curr_form, "two");
   EXPECT_SUBSTR(form.innerHTML, "Current Form: two");
-  // This next part checks that the current form is retained between pages.
-  // TODO: Do we want this behavior?
+  // This next part checks that the current form is set to scratch between pages.
   model.GoToPage("b");
   model.GoToPage("c");
-  EXPECT_EQ(model.curr_form, "two");
-  EXPECT_SUBSTR(form.innerHTML, "Current Form: two");
+  EXPECT_EQ(model.curr_form, "scratch");
+  EXPECT_SUBSTR(form.innerHTML, "Current Form: scratch");
   model.GoToPage("a");
   model.GoToPage("c");
-  EXPECT_EQ(model.curr_form, "one");
-  EXPECT_SUBSTR(form.innerHTML, "Current Form: one");
+  EXPECT_EQ(model.curr_form, "scratch");
+  EXPECT_SUBSTR(form.innerHTML, "Current Form: scratch");
   // For manual testing, don't remove the form element.
   form.remove();
 }
@@ -1430,9 +1431,9 @@ DefineTest("TestGetTextIndexOfPage").func = function() {
 DefineTest("TestSaveState").func = function() {
   var original_model = "page p1 form foo usecopy 0 x = \"goodbye\";\n" +
                        "page p2 form foo newcopy usecopy 1 x = \"hello\";\n" +
-                       "page stop\n" +
-                       "page p3 usecopy 0 print x\n" +
-                       "page p4 usecopy 1 print x\n";
+                       "page stop form foo\n" +
+                       "page p3 form foo usecopy 0 print x\n" +
+                       "page p4 form foo usecopy 1 print x\n";
   var model = interview.Parse(original_model);
   var form = document.createElement("form");
   document.body.appendChild(form);
@@ -1458,7 +1459,6 @@ DefineTest("TestSaveState").func = function() {
      "  form scratch\n" +
      "  internal_resetcopyid 0\n" +
      "  usecopy 0 /* last_known_copy_id */\n" +
-     "  form foo /* last_known_form */\n" +
      "  goto stop /* last_known_page */\n\n" +
      original_model;
   EXPECT_EQ(text, expected_model_1);
@@ -1478,18 +1478,21 @@ DefineTest("TestSaveState").func = function() {
   form.remove();
 }
 DefineTest("TestResetFormCopyId").func = function() {
-  var model = interview.Parse("page p1 form foo "+
-                    "page p2 internal_resetcopyid 5 " +
-                    "page p3 x = 3; internal_resetcopyid x " +
-                    "page p4 newcopy " +
-                    "page p5 prevcopy " +
-                    "page p6 nextcopy");
+  var str = "page p1 form foo "+
+                    "page p2 form foo internal_resetcopyid 5 " +
+                    "page p3 form foo x = 3; internal_resetcopyid x " +
+                    "page p4 form foo newcopy " +
+                    "page p5 form foo prevcopy " +
+                    "page p6 form foo nextcopy " +
+                    "page p7 form bar internal_resetcopyid 7";
+  var model = interview.Parse(str);
   var form = document.createElement("form");
   document.body.appendChild(form);
   interview.RenderModel(model, form);
   // Just one form copy: 0
   EXPECT_EQ(interview.GetFormCopyId(model), 0);
   EXPECT_EQ(interview.GetNumFormCopies(model), 1);
+  EXPECT_EQ(model.curr_form, "foo");
   model.GoToPage("p2");
   // Just one form copy: 5
   EXPECT_EQ(interview.GetFormCopyId(model), 5);
@@ -1537,17 +1540,11 @@ DefineTest("TestResetFormCopyId").func = function() {
   // form copies: 3, 5, 7(curr)
   EXPECT_EQ(interview.GetFormCopyId(model), 7);
 
-  interview.SetForm(model, "bar");
+  model.GoToPage("p7");
   EXPECT_EQ(model.curr_form, "bar");
-  EXPECT_EQ(interview.GetFormCopyId(model), 0);
-  EXPECT_EQ(model.curr_form, "bar");
+  EXPECT_EQ(interview.GetFormCopyId(model), 7);
   EXPECT_EQ(interview.GetNumFormCopies(model), 1);
-  EXPECT_EQ(model.curr_form, "bar");
-  model.GoToPage("p2");
-  EXPECT_EQ(model.curr_form, "bar");
-  EXPECT_EQ(interview.GetFormCopyId(model), 5);
-  EXPECT_EQ(model.curr_form, "bar");
-  EXPECT_EQ(interview.GetNumFormCopies(model), 1);
+
   interview.SetForm(model, "foo");
   EXPECT_EQ(interview.GetFormCopyId(model), 7);
   EXPECT_EQ(interview.GetNumFormCopies(model), 3);
@@ -1609,10 +1606,12 @@ DefineTest("TestSelect").func = function() {
     "  goto main\n" +
     "\n" +
     "page up\n" +
+    "  form foo\n" +
     "  prevcopy\n" +
     "  goto main\n" +
     "\n" +
     "page down\n" +
+    "  form foo\n" +
     "  nextcopy\n" +
     "  goto main\n" +
     "\n" +

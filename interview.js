@@ -144,7 +144,7 @@ interview.ParseError = function(msg, token, model) {
   let len = token[2];
   let annotated_code = model.text.substr(0, idx + 1) + "/* Here */" +
         model.text.substr(idx + 1);
-  throw {msg: msg, idx1: idx, idx2: idx + len};
+  throw {msg: msg, idx1: idx, idx2: idx + len, jsStack: Error().stack};
 }
 interview.ParseErrorPriorToken = function(msg, model) {
   var idx = model.token_idx - 1;
@@ -159,7 +159,7 @@ interview.ParseErrorPriorToken = function(msg, model) {
 }
 interview.RuntimeError = function(msg, token, model) {
   // TODO: Unify ParseError and RuntimeError.
-  let err = {msg: msg, idx1: 0, idx2: 0};
+  let err = {msg: msg, idx1: 0, idx2: 0, jsStack: Error().stack};
   if (token !== null) {
     err.idx1 = token[1];
     err.idx2 = token[1] + token[2];
@@ -464,9 +464,6 @@ interview.HandleNewNode = function(model, curr, new_node) {
     if ([interview.IDENTIFIER_TOKEN].includes(new_node.type)) {
       interview.AppendBelowRight(curr, new_node);
       model.expression_end = true;
-      if (curr.type == interview.FORM_KEYWORD) {
-        interview.SetForm(model, String(new_node.right));
-      }
       if (curr.type == interview.PAGE_KEYWORD) {
         var prev_page = model.current_page;
         model.current_page = String(new_node.right);
@@ -966,7 +963,6 @@ interview.SaveState = function(model) {
     proceed = true
   }
   var last_known_page = model.current_page;
-  var last_known_form = model.curr_form;
   var original_first_page = interview.FindFirstPage(model);
   // TODO: Check if original first page is already an older restore page?
   var save_page_name = interview.GetSavePageName(model.dev_mode_start_time);
@@ -992,8 +988,6 @@ interview.SaveState = function(model) {
     save_page += "  usecopy " + last_know_form_copy + " /* last_known_copy_id */\n";
     interview.UseCopyId(model, last_know_form_copy);
   }
-  save_page += "  form " + last_known_form + " /* last_known_form */\n";
-  interview.SetForm(model, last_known_form);
   save_page += "  goto " + last_known_page + " /* last_known_page */\n\n";
   var char_idx = interview.GetTextIndexOfPage(model, original_first_page);
   while (char_idx > 0 && /\s/.test(model.text[char_idx - 1]) &&
@@ -1113,6 +1107,7 @@ interview.DeveloperMode = function(model) {
   textbox.value = model.text;
 }
 interview.RenderModel = function(model, html_form) {
+  interview.SetForm(model, "scratch");
   html_form.model = model;
   model.html_form = html_form;
   gtag('event', 'screen_view', {
