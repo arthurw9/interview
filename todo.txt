@@ -2,12 +2,17 @@ Forms:
 - Get values from a different form and/or copy.
 
 GUI:
-- Make the navigation and developer buttons explicit commands: NextPage, PrevPage, Developer
+- Make the navigation and developer buttons explicit: NextPage, PrevPage, Developer
 - Table columns made by the select statement should resizeable by the user.
 - Input boxes made by the input statements should be resizeable by the user.
-- Add a refresh button (footer pages complicate what gets refreshed. Add gosub?)
+- Refresh button allows user to refresh the current page.
+  Footer pages can complicate what gets refreshed.
+  A keyword indicates this page is not refreshable.
+  If exactly one page is displayed without the not-refreshable keyword, then
+  a refresh button appears that allows the user to refresh the page.
 
 Language:
+- Template strings: "foo %1 %2 %1" % ("one", "two")
 - Delete form copy
 - if statements.
 - loops.
