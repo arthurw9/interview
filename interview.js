@@ -1308,6 +1308,7 @@ interview.RenderFromStr = function(str, html_form, onDone) {
   return model;
 }
 // |onLoad|(text) is called once the |url| is loaded.
+// |onFail|(jsError) is called if there is a problem loading |url|.
 interview.TextFromURL = function(url, onLoad, onFail) {
   fetch(url)
     .then(function(response) {
@@ -1324,7 +1325,8 @@ interview.TextFromURL = function(url, onLoad, onFail) {
              onFail(error);
            });
 }
-// |onload|(model) is called once the new model from |url| is rendered.
+// |onLoad|(model) is called once the new model from |url| is rendered.
+// |onFail|(jsError) is called if there is a problem loading |url|.
 interview.RenderFromURL = function(url, html_form, onLoad, onFail) {
   if (onLoad == null) {
     onLoad = function(model){};
