@@ -805,13 +805,19 @@ interview.RenderSelect = function(model, select_expr) {
 }
 interview.LoadKeepingData = function(expr, source_model, html_form, onDone) {
   let url = interview.Evaluate(source_model, expr.right);
-  let Render = function(reponse_text) {
+  let Render = function(response_text) {
     try {
-      var model = interview.Parse(reponse_text);
+      var model = interview.Parse(response_text);
       interview.CopyData(source_model, model);
       interview.RenderModel(model, html_form);
     } catch(err) {
-      interview.DisplayError(model, err, reponse_text);
+      if (model == null) {
+        var model = html_form.model;
+      }
+      if (model == null) {
+        var model = {};
+      }
+      interview.DisplayError(model, err, response_text);
     } finally {
       onDone(model);
     }
@@ -1303,6 +1309,12 @@ interview.RenderFromStr = function(str, html_form, onDone) {
     var model = interview.Parse(str);
     interview.RenderModel(model, html_form, onDone);
   } catch(err) {
+    if (model == null) {
+      model = html_form.model;
+    }
+    if (model == null) {
+      var model = {};
+    }
     interview.DisplayError(model, err, str);
   }
   return model;
@@ -1318,8 +1330,8 @@ interview.TextFromURL = function(url, onLoad, onFail) {
             // TODO: What if it's not text? Write a unit test to see what happens.
             return response.text();
           })
-    .then(function(reponse_text) {
-            onLoad(reponse_text);
+    .then(function(response_text) {
+            onLoad(response_text);
           })
     .catch(function(error) {
              onFail(error);
@@ -1334,8 +1346,8 @@ interview.RenderFromURL = function(url, html_form, onLoad, onFail) {
   if (onFail == null) {
     onFail = function(jsError){};
   }
-  let Render = function(reponse_text) {
-    let model = interview.RenderFromStr(reponse_text, html_form);
+  let Render = function(response_text) {
+    let model = interview.RenderFromStr(response_text, html_form);
     onLoad(model);
   }
   interview.TextFromURL(url, Render, onFail);
