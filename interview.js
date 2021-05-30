@@ -817,6 +817,9 @@ interview.LoadKeepingData = function(expr, source_model, html_form, onDone) {
       if (model == null) {
         var model = {};
       }
+      if (!model.hasOwnProperty("html_form")) {
+        model.html_form = html_form;
+      }
       interview.DisplayError(model, err, response_text);
     } finally {
       onDone(model);
@@ -890,35 +893,39 @@ interview.RandomIdentifier = function(prefix) {
 // |text| is the new model text to display.
 // This is useful in case of a parse error where the text in model is not updated.
 interview.DisplayError = function(model, err, text) {
-  if (!model.hasOwnProperty("dev_mode_textbox") ||
-      !document.getElementById(model.dev_mode_textbox)) {
-    interview.DeveloperMode(model);
+  try {
+    if (!model.hasOwnProperty("dev_mode_textbox") ||
+        !document.getElementById(model.dev_mode_textbox)) {
+      interview.DeveloperMode(model);
+    }
+    var text_area = document.getElementById(model.dev_mode_textbox);
+    if (!model.hasOwnProperty("err_msg_div") ||
+        !document.getElementById(model.err_msg_div)) {
+      model.err_msg_div = interview.RandomIdentifier("err_msg_div_");
+      let err_msg_div = document.createElement("div");
+      err_msg_div.id = model.err_msg_div;
+      text_area.insertAdjacentElement('beforebegin', err_msg_div);
+      err_msg_div.style.border = "5px solid red";
+      err_msg_div.style.padding = "5px";
+      err_msg_div.style.margin = "5px";
+    }
+    let err_msg_div = document.getElementById(model.err_msg_div);
+    err_msg_div.innerText = err.msg;
+    // Fill the text area up to the error location.
+    // scroll down as much as possible.
+    // record the scroll value.
+    // Then fill in all the text, select the error location, and
+    // scroll to the recorded location.
+    text_area.value = text.substr(0, err.idx1);
+    text_area.scrollTop = text_area.scrollHeight;
+    let scroll_top = text_area.scrollTop;
+    text_area.value = text;
+    text_area.setSelectionRange(err.idx1, err.idx2);
+    text_area.scrollTop = scroll_top;
+    text_area.focus();
+  } catch(e) {
+    console.trace("Internal Error", e);
   }
-  var text_area = document.getElementById(model.dev_mode_textbox);
-  if (!model.hasOwnProperty("err_msg_div") ||
-      !document.getElementById(model.err_msg_div)) {
-    model.err_msg_div = interview.RandomIdentifier("err_msg_div_");
-    let err_msg_div = document.createElement("div");
-    err_msg_div.id = model.err_msg_div;
-    text_area.insertAdjacentElement('beforebegin', err_msg_div);
-    err_msg_div.style.border = "5px solid red";
-    err_msg_div.style.padding = "5px";
-    err_msg_div.style.margin = "5px";
-  }
-  let err_msg_div = document.getElementById(model.err_msg_div);
-  err_msg_div.innerText = err.msg;
-  // Fill the text area up to the error location.
-  // scroll down as much as possible.
-  // record the scroll value.
-  // Then fill in all the text, select the error location, and
-  // scroll to the recorded location.
-  text_area.value = text.substr(0, err.idx1);
-  text_area.scrollTop = text_area.scrollHeight;
-  let scroll_top = text_area.scrollTop;
-  text_area.value = text;
-  text_area.setSelectionRange(err.idx1, err.idx2);
-  text_area.scrollTop = scroll_top;
-  text_area.focus();
 }
 interview.Reload = function(model) {
   gtag('event', 'screen_view', {
@@ -934,17 +941,7 @@ interview.Reload = function(model) {
   }
   var text=document.getElementById(model.dev_mode_textbox).value;
   var html_form = model.html_form;
-  try {
-    // For some reason, introducing a different model var here breaks
-    // calling |Reload| after a runtime error. So reusing the existing
-    // model.
-    model = interview.Parse(text);
-    interview.RenderModel(model, html_form);
-    return model;
-  } catch(err) {
-    interview.DisplayError(model, err, text);
-  }
-  return model;
+  return interview.RenderFromStr(text, html_form);
 }
 interview.CopyData = function(source_model, dest_model) {
   dest_model.form_info = JSON.parse(JSON.stringify(source_model.form_info));
@@ -1314,6 +1311,9 @@ interview.RenderFromStr = function(str, html_form, onDone) {
     }
     if (model == null) {
       var model = {};
+    }
+    if (!model.hasOwnProperty("html_form")) {
+      model.html_form = html_form;
     }
     interview.DisplayError(model, err, str);
   }

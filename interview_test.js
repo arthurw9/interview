@@ -1836,7 +1836,7 @@ DefineTest("LoadMissingFile").func = function() {
     let text_box = document.getElementById(model.dev_mode_textbox);
     let idx1 = text_box.selectionStart;
     let idx2 = text_box.selectionEnd;
-    EXPECT_SUBSTR(text_box.value.substring(idx1, idx2), 
+    EXPECT_EQ(text_box.value.substring(idx1, idx2), 
               "\"intentionally_not_found_2.interview\"");
     // For manual testing, don't remove the form element.
     form.remove();
@@ -1846,5 +1846,45 @@ DefineTest("LoadMissingFile").func = function() {
       "load \"intentionally_not_found_2.interview\"",
       form, onDone);
 }
+DefineTest("LoadFileWithParseError").func = function() {
+  let test_name = AsyncTest();
+  let form = document.createElement("form");
+  document.body.appendChild(form);
+  let onDone = function(model) {
+    current_test_name = test_name;
+    EXPECT_SUBSTR(form.innerHTML,
+                  "Expected String or identifier after print");
+    EXPECT_SUBSTR(model.dev_mode_textbox, "model_def_");
+    let text_box = document.getElementById(model.dev_mode_textbox);
+    let idx1 = text_box.selectionStart;
+    let idx2 = text_box.selectionEnd;
+    EXPECT_EQ(text_box.value.substring(idx1, idx2), 
+              "print");
+    EXPECT_SUBSTR(text_box.value, "This model is used in unit tests");
+    EXPECT_SUBSTR(text_box.value, "print print");
+    // For manual testing, don't remove the form element.
+    form.remove();
+    AsyncDone(test_name);
+  }
+  interview.RenderFromStr(
+      "load \"intentional_parse_error.interview\"",
+      form, onDone);
+}
+DefineTest("TestRenderFromStrWithParseError").func = function() {
+  let form = document.createElement("form");
+  document.body.appendChild(form);
+  let str = "print print ;";
+  let model = interview.RenderFromStr(str, form);
+  EXPECT_SUBSTR(form.innerHTML, "Expected String or identifier after print");
+  EXPECT_SUBSTR(model.dev_mode_textbox, "model_def_");
+  let text_box = document.getElementById(model.dev_mode_textbox);
+  let idx1 = text_box.selectionStart;
+  let idx2 = text_box.selectionEnd;
+  EXPECT_EQ(text_box.value.substring(idx1, idx2), "print");
+  EXPECT_SUBSTR(text_box.value, "print print");
+  // For manual testing, don't remove the form element.
+  form.remove();
+}
+// RunTest("TestRenderFromStrWithParseError");
 RunTestsRandomly();
 

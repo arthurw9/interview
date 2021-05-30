@@ -1,0 +1,6 @@
+/* This model is used in unit tests to verify the behavior when
+   a model with a parse error is loaded. We need to make sure
+   the parse error is displayed. */
+print print
+;
+
